@@ -7,9 +7,9 @@
  *
  * Storage keeps both `latest.json` (fast retrieval) and a full history.
  */
-import type { MemoryStore } from '../storage/interface.js';
-import type { Handoff } from '../types.js';
-import { newId, nowIso } from '../util.js';
+import type { MemoryStore } from "../storage/interface.js";
+import type { Handoff } from "../types.js";
+import { newId, nowIso } from "../util.js";
 
 export interface CreateHandoffInput {
   projectId: string;
@@ -29,12 +29,12 @@ export class HandoffManager {
 
   async createHandoff(input: CreateHandoffInput): Promise<Handoff> {
     const task = input.task?.trim();
-    if (!task) throw new Error('Handoff task must not be empty');
+    if (!task) throw new Error("Handoff task must not be empty");
     const nextAction = input.nextAction?.trim();
-    if (!nextAction) throw new Error('Handoff nextAction must not be empty');
+    if (!nextAction) throw new Error("Handoff nextAction must not be empty");
 
     const handoff: Handoff = {
-      id: newId('ho'),
+      id: newId("ho"),
       projectId: input.projectId,
       sessionId: input.sessionId,
       agentId: input.agentId,

@@ -162,31 +162,31 @@ All writes are atomic (temp file → fsync → rename) or append-only with fsync
 }
 ```
 
-| Key | Meaning |
-| --- | --- |
-| `maxContextItems` | Max items per section in the generated briefing |
+| Key                 | Meaning                                              |
+| ------------------- | ---------------------------------------------------- |
+| `maxContextItems`   | Max items per section in the generated briefing      |
 | `enableRawSessions` | Keep raw session records (summaries are always kept) |
-| `search.maxResults` | Default result limit for `search_memory` |
+| `search.maxResults` | Default result limit for `search_memory`             |
 
 ## The MCP tools (15)
 
-| Tool | Purpose |
-| --- | --- |
+| Tool                         | Purpose                                                                                                                                                                             |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `initialize_project_context` | **Call first.** Detects/registers the project and returns a compact briefing: current task, latest handoff, completed/remaining work, problems, decisions, recommended next action. |
-| `get_project_context` | Lightweight fetch of the stored project context. |
-| `save_memory` | Save a curated memory (`decision`, `requirement`, `architecture`, `task`, `problem`, `solution`, `progress`, `fact`, `preference`, `constraint`, `discovery`). Pass `id` to update. |
-| `get_memory` | Retrieve one memory by id. |
-| `search_memory` | Ranked keyword search across memories, tasks, decisions, handoffs, session summaries and context. |
-| `get_current_task` | Most relevant open task + other open tasks. |
-| `update_task` | Create or update a task (`active`, `in_progress`, `completed`, `blocked`, `abandoned`). |
-| `record_decision` | Record an important decision (long-lived in ranking). |
-| `get_decisions` | List decisions, newest first. |
-| `create_handoff` | **Call before stopping.** Structured handoff: completed, remaining, problems, changed files, next action. |
-| `get_latest_handoff` | Fetch the most recent handoff (optionally with history). |
-| `start_session` | Begin tracking an agent working session. |
-| `finish_session` | End a session with status + summary. |
-| `delete_project_memory` | Permanently delete one project's memory (`confirm: true`). |
-| `clear_memory` | Permanently delete **all** memory (`confirm: true` + phrase `"delete everything"`). |
+| `get_project_context`        | Lightweight fetch of the stored project context.                                                                                                                                    |
+| `save_memory`                | Save a curated memory (`decision`, `requirement`, `architecture`, `task`, `problem`, `solution`, `progress`, `fact`, `preference`, `constraint`, `discovery`). Pass `id` to update. |
+| `get_memory`                 | Retrieve one memory by id.                                                                                                                                                          |
+| `search_memory`              | Ranked keyword search across memories, tasks, decisions, handoffs, session summaries and context.                                                                                   |
+| `get_current_task`           | Most relevant open task + other open tasks.                                                                                                                                         |
+| `update_task`                | Create or update a task (`active`, `in_progress`, `completed`, `blocked`, `abandoned`).                                                                                             |
+| `record_decision`            | Record an important decision (long-lived in ranking).                                                                                                                               |
+| `get_decisions`              | List decisions, newest first.                                                                                                                                                       |
+| `create_handoff`             | **Call before stopping.** Structured handoff: completed, remaining, problems, changed files, next action.                                                                           |
+| `get_latest_handoff`         | Fetch the most recent handoff (optionally with history).                                                                                                                            |
+| `start_session`              | Begin tracking an agent working session.                                                                                                                                            |
+| `finish_session`             | End a session with status + summary.                                                                                                                                                |
+| `delete_project_memory`      | Permanently delete one project's memory (`confirm: true`).                                                                                                                          |
+| `clear_memory`               | Permanently delete **all** memory (`confirm: true` + phrase `"delete everything"`).                                                                                                 |
 
 ### Recommended agent workflow
 
@@ -228,12 +228,12 @@ node dist/cli/index.js handoff latest --json
 
 ## Troubleshooting
 
-| Symptom | Fix |
-| --- | --- |
-| Client can't see the tools | Make sure `command` is an absolute path to `node` and `args[0]` is the absolute path to `dist/index.js`. Run `pnpm run build` first. |
-| Wrong project detected | Check `memory-mcp project current`. Add a `.agent-memory.json` to pin an identity, or add a git remote. |
-| Same repo, different memory per machine | Ensure the git remote URL is set (`git remote -v`) — it is the primary identity. |
-| Anything else | Run `memory-mcp doctor` (or `pnpm run doctor`) and read the check list. |
+| Symptom                                 | Fix                                                                                                                                  |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Client can't see the tools              | Make sure `command` is an absolute path to `node` and `args[0]` is the absolute path to `dist/index.js`. Run `pnpm run build` first. |
+| Wrong project detected                  | Check `memory-mcp project current`. Add a `.agent-memory.json` to pin an identity, or add a git remote.                              |
+| Same repo, different memory per machine | Ensure the git remote URL is set (`git remote -v`) — it is the primary identity.                                                     |
+| Anything else                           | Run `memory-mcp doctor` (or `pnpm run doctor`) and read the check list.                                                              |
 
 ## Development
 

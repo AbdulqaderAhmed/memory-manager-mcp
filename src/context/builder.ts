@@ -13,7 +13,7 @@
  *
  * Raw conversation history is never included by default.
  */
-import type { MemoryStore } from '../storage/interface.js';
+import type { MemoryStore } from "../storage/interface.js";
 import type {
   Decision,
   Handoff,
@@ -22,14 +22,14 @@ import type {
   ProjectContext,
   Task,
   UnfinishedWorkSignal,
-} from '../types.js';
-import type { MemoryManager } from '../memory/manager.js';
-import type { SessionManager } from '../session/manager.js';
-import type { HandoffManager } from '../handoff/manager.js';
-import { rankMemories } from '../memory/ranker.js';
-import { detectUnfinishedWork } from './unfinished.js';
-import { compressItem, fitBudget, type BudgetOptions } from './compressor.js';
-import { relativeTime } from '../util.js';
+} from "../types.js";
+import type { MemoryManager } from "../memory/manager.js";
+import type { SessionManager } from "../session/manager.js";
+import type { HandoffManager } from "../handoff/manager.js";
+import { rankMemories } from "../memory/ranker.js";
+import { detectUnfinishedWork } from "./unfinished.js";
+import { compressItem, fitBudget, type BudgetOptions } from "./compressor.js";
+import { relativeTime } from "../util.js";
 
 export interface BuiltContext {
   project: Project;
@@ -62,41 +62,50 @@ export class ContextBuilder {
     private readonly handoffManager: HandoffManager,
   ) {}
 
-  async build(project: Project, options?: BuildContextOptions): Promise<BuiltContext> {
+  async build(
+    project: Project,
+    options?: BuildContextOptions,
+  ): Promise<BuiltContext> {
     const projectId = project.id;
     const maxItems = options?.maxItems ?? 20;
 
-    const [context, currentTask, latestHandoff, memories, decisions, unfinishedWork] =
-      await Promise.all([
-        this.store.getContext(projectId),
-        this.memoryManager.getCurrentTask(projectId),
-        this.handoffManager.getLatestHandoff(projectId),
-        this.store.getMemories(projectId),
-        this.memoryManager.getDecisions(projectId, true),
-        detectUnfinishedWork(
-          projectId,
-          {
-            store: this.store,
-            memoryManager: this.memoryManager,
-            sessionManager: this.sessionManager,
-            handoffManager: this.handoffManager,
-          },
-          { workspacePath: options?.workspacePath },
-        ),
-      ]);
+    const [
+      context,
+      currentTask,
+      latestHandoff,
+      memories,
+      decisions,
+      unfinishedWork,
+    ] = await Promise.all([
+      this.store.getContext(projectId),
+      this.memoryManager.getCurrentTask(projectId),
+      this.handoffManager.getLatestHandoff(projectId),
+      this.store.getMemories(projectId),
+      this.memoryManager.getDecisions(projectId, true),
+      detectUnfinishedWork(
+        projectId,
+        {
+          store: this.store,
+          memoryManager: this.memoryManager,
+          sessionManager: this.sessionManager,
+          handoffManager: this.handoffManager,
+        },
+        { workspacePath: options?.workspacePath },
+      ),
+    ]);
 
     const activeProblems = memories
-      .filter((m) => m.type === 'problem')
+      .filter((m) => m.type === "problem")
       .sort((a, b) => b.importance - a.importance)
       .slice(0, Math.min(5, maxItems));
 
     const architecture = memories
-      .filter((m) => m.type === 'architecture')
+      .filter((m) => m.type === "architecture")
       .sort((a, b) => b.importance - a.importance)
       .slice(0, Math.min(5, maxItems));
 
     const recentProgress = memories
-      .filter((m) => m.type === 'progress')
+      .filter((m) => m.type === "progress")
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
       .slice(0, Math.min(5, maxItems));
 
@@ -166,7 +175,7 @@ interface RenderInput {
 }
 
 function bulletList(items: string[], budget?: BudgetOptions): string {
-  return items.map((i) => `- ${compressItem(i, budget)}`).join('\n');
+  return items.map((i) => `- ${compressItem(i, budget)}`).join("\n");
 }
 
 export function renderBriefing(input: RenderInput): string {
@@ -174,33 +183,44 @@ export function renderBriefing(input: RenderInput): string {
   const sections: string[] = [];
 
   // Header
-  const headerLines = [`PROJECT: ${input.project.name}`, `Project ID: ${input.project.id}`];
+  const headerLines = [
+    `PROJECT: ${input.project.name}`,
+    `Project ID: ${input.project.id}`,
+  ];
   if (input.context?.technology?.length) {
-    headerLines.push(`Technology: ${input.context.technology.join(', ')}`);
+    headerLines.push(`Technology: ${input.context.technology.join(", ")}`);
   }
   if (input.context?.lastAgent) {
     headerLines.push(`Previous agent: ${input.context.lastAgent}`);
   }
   if (input.context?.lastUpdated) {
-    headerLines.push(`Last activity: ${relativeTime(input.context.lastUpdated)}`);
+    headerLines.push(
+      `Last activity: ${relativeTime(input.context.lastUpdated)}`,
+    );
   }
-  if (input.context?.status && input.context.status !== 'unknown') {
+  if (input.context?.status && input.context.status !== "unknown") {
     headerLines.push(`Status: ${input.context.status}`);
   }
-  sections.push(headerLines.join('\n'));
+  sections.push(headerLines.join("\n"));
 
   // Unfinished work banner
   const uw = input.unfinishedWork;
   if (uw) {
-    const lines = ['Unfinished work detected.'];
+    const lines = ["Unfinished work detected."];
     if (uw.activeTask) lines.push(`Task: ${uw.activeTask.title}`);
     if (uw.lastAgent) lines.push(`Last agent: ${uw.lastAgent}`);
-    if (uw.lastActivityAt) lines.push(`Last activity: ${relativeTime(uw.lastActivityAt)}`);
+    if (uw.lastActivityAt)
+      lines.push(`Last activity: ${relativeTime(uw.lastActivityAt)}`);
     if (uw.uncommittedChanges?.length) {
-      lines.push(`Uncommitted changes: ${uw.uncommittedChanges.length} file(s)`);
+      lines.push(
+        `Uncommitted changes: ${uw.uncommittedChanges.length} file(s)`,
+      );
     }
-    if (uw.openSession) lines.push(`Open session: ${uw.openSession.sessionId} (${uw.openSession.agentId})`);
-    sections.push(lines.join('\n'));
+    if (uw.openSession)
+      lines.push(
+        `Open session: ${uw.openSession.sessionId} (${uw.openSession.agentId})`,
+      );
+    sections.push(lines.join("\n"));
   }
 
   // Current task
@@ -209,33 +229,40 @@ export function renderBriefing(input: RenderInput): string {
     if (input.currentTask.description) {
       lines.push(compressItem(input.currentTask.description, budget));
     }
-    sections.push(lines.join('\n'));
+    sections.push(lines.join("\n"));
   }
 
   // Latest handoff
   const ho = input.latestHandoff;
   if (ho) {
-    const lines = [`Latest handoff (from ${ho.agentId}, ${relativeTime(ho.createdAt)}):`];
+    const lines = [
+      `Latest handoff (from ${ho.agentId}, ${relativeTime(ho.createdAt)}):`,
+    ];
     lines.push(`Task: ${ho.task}`);
     if (ho.completed.length) {
-      lines.push('Completed:', bulletList(ho.completed, budget));
+      lines.push("Completed:", bulletList(ho.completed, budget));
     }
     if (ho.remaining.length) {
-      lines.push('Remaining:', bulletList(ho.remaining, budget));
+      lines.push("Remaining:", bulletList(ho.remaining, budget));
     }
     if (ho.problems.length) {
-      lines.push('Known problems:', bulletList(ho.problems, budget));
+      lines.push("Known problems:", bulletList(ho.problems, budget));
     }
     lines.push(`Recommended next action: ${ho.nextAction}`);
-    sections.push(lines.join('\n'));
+    sections.push(lines.join("\n"));
   }
 
   // Active problems (not already in handoff)
   const handoffProblems = new Set(ho?.problems ?? []);
-  const extraProblems = input.activeProblems.filter((p) => !handoffProblems.has(p.content));
+  const extraProblems = input.activeProblems.filter(
+    (p) => !handoffProblems.has(p.content),
+  );
   if (extraProblems.length) {
     sections.push(
-      `Active problems:\n${bulletList(extraProblems.map((p) => p.content), budget)}`,
+      `Active problems:\n${bulletList(
+        extraProblems.map((p) => p.content),
+        budget,
+      )}`,
     );
   }
 
@@ -252,14 +279,20 @@ export function renderBriefing(input: RenderInput): string {
   // Architecture
   if (input.architecture.length) {
     sections.push(
-      `Architecture notes:\n${bulletList(input.architecture.map((a) => a.content), budget)}`,
+      `Architecture notes:\n${bulletList(
+        input.architecture.map((a) => a.content),
+        budget,
+      )}`,
     );
   }
 
   // Recent progress
   if (input.recentProgress.length) {
     sections.push(
-      `Recent progress:\n${bulletList(input.recentProgress.map((p) => p.content), budget)}`,
+      `Recent progress:\n${bulletList(
+        input.recentProgress.map((p) => p.content),
+        budget,
+      )}`,
     );
   }
 
@@ -269,7 +302,9 @@ export function renderBriefing(input: RenderInput): string {
     ...input.architecture.map((m) => m.id),
     ...input.recentProgress.map((m) => m.id),
   ]);
-  const other = input.relevantMemories.filter((m) => !seen.has(m.id)).slice(0, 5);
+  const other = input.relevantMemories
+    .filter((m) => !seen.has(m.id))
+    .slice(0, 5);
   if (other.length) {
     sections.push(
       `Other relevant memories:\n${bulletList(

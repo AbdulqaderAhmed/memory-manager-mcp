@@ -7,12 +7,12 @@
  *   - uncommitted git changes exist
  *   - a recent handoff lists remaining work
  */
-import type { MemoryStore } from '../storage/interface.js';
-import type { UnfinishedWorkSignal } from '../types.js';
-import type { MemoryManager } from '../memory/manager.js';
-import type { SessionManager } from '../session/manager.js';
-import type { HandoffManager } from '../handoff/manager.js';
-import { getGitInfo } from '../git/gitService.js';
+import type { MemoryStore } from "../storage/interface.js";
+import type { UnfinishedWorkSignal } from "../types.js";
+import type { MemoryManager } from "../memory/manager.js";
+import type { SessionManager } from "../session/manager.js";
+import type { HandoffManager } from "../handoff/manager.js";
+import { getGitInfo } from "../git/gitService.js";
 
 export interface DetectUnfinishedOptions {
   workspacePath?: string;
@@ -28,17 +28,20 @@ export async function detectUnfinishedWork(
   },
   options?: DetectUnfinishedOptions,
 ): Promise<UnfinishedWorkSignal | null> {
-  const [activeTask, activeSessions, latestHandoff, latestSession, context] = await Promise.all([
-    deps.memoryManager.getCurrentTask(projectId),
-    deps.sessionManager.getActiveSessions(projectId),
-    deps.handoffManager.getLatestHandoff(projectId),
-    deps.sessionManager.getLatestSession(projectId),
-    deps.store.getContext(projectId),
-  ]);
+  const [activeTask, activeSessions, latestHandoff, latestSession, context] =
+    await Promise.all([
+      deps.memoryManager.getCurrentTask(projectId),
+      deps.sessionManager.getActiveSessions(projectId),
+      deps.handoffManager.getLatestHandoff(projectId),
+      deps.sessionManager.getLatestSession(projectId),
+      deps.store.getContext(projectId),
+    ]);
 
   let uncommittedChanges: string[] | undefined;
   if (options?.workspacePath) {
-    const git = await getGitInfo(options.workspacePath, { includeCommits: false });
+    const git = await getGitInfo(options.workspacePath, {
+      includeCommits: false,
+    });
     if (git.isRepo && git.hasUncommittedChanges && git.changedFiles) {
       uncommittedChanges = git.changedFiles;
     }

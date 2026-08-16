@@ -4,11 +4,11 @@
  * When a previously unknown project is detected it is registered
  * automatically — no manual setup required.
  */
-import path from 'node:path';
-import type { MemoryStore } from '../storage/interface.js';
-import type { Project, ProjectContext, ProjectDetection } from '../types.js';
-import { MEMORY_VERSION } from '../version.js';
-import { nowIso } from '../util.js';
+import path from "node:path";
+import type { MemoryStore } from "../storage/interface.js";
+import type { Project, ProjectContext, ProjectDetection } from "../types.js";
+import { MEMORY_VERSION } from "../version.js";
+import { nowIso } from "../util.js";
 
 export interface EnsureProjectResult {
   project: Project;
@@ -23,7 +23,9 @@ export class ProjectRegistry {
    * Find or create the project for a detection result. Also refreshes
    * lastActivityAt and records any newly observed local path.
    */
-  async ensureProject(detection: ProjectDetection): Promise<EnsureProjectResult> {
+  async ensureProject(
+    detection: ProjectDetection,
+  ): Promise<EnsureProjectResult> {
     const existing = await this.store.getProject(detection.projectId);
     const now = nowIso();
     const localPath = detection.git?.repoRoot ?? detection.workspacePath;
@@ -41,8 +43,7 @@ export class ProjectRegistry {
     }
 
     const name =
-      detection.identity.repoName ??
-      path.basename(detection.workspacePath);
+      detection.identity.repoName ?? path.basename(detection.workspacePath);
 
     const project: Project = {
       id: detection.projectId,
@@ -61,7 +62,7 @@ export class ProjectRegistry {
       projectId: project.id,
       name: project.name,
       technology: [],
-      status: 'unknown',
+      status: "unknown",
       lastUpdated: now,
     };
     await this.store.saveContext(context);

@@ -66,7 +66,7 @@ Before stopping — even for a short pause — always:
    - `nextAction` — the single best next step.
 2. **`finish_session`** with status (`completed`, `interrupted`, `abandoned`) and a one-line summary.
 
-A handoff is how an agent in a *different IDE* continues your work seamlessly. Skipping it breaks the chain.
+A handoff is how an agent in a _different IDE_ continues your work seamlessly. Skipping it breaks the chain.
 
 ### 4. Hygiene
 

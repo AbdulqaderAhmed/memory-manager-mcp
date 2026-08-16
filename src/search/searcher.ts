@@ -6,20 +6,48 @@
  * bonus, importance, recency). The SearchOptions interface is designed so a
  * semantic backend can be swapped in later without changing callers.
  */
-import type { MemoryStore } from '../storage/interface.js';
-import type {
-  Memory,
-  SearchResult,
-  SearchOptions,
-} from '../types.js';
-import { rankMemory } from '../memory/ranker.js';
-import { truncate } from '../util.js';
+import type { MemoryStore } from "../storage/interface.js";
+import type { Memory, SearchResult, SearchOptions } from "../types.js";
+import { rankMemory } from "../memory/ranker.js";
+import { truncate } from "../util.js";
 
 const STOPWORDS = new Set([
-  'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for', 'from', 'has',
-  'have', 'how', 'i', 'in', 'is', 'it', 'its', 'of', 'on', 'or', 'that',
-  'the', 'this', 'to', 'was', 'were', 'what', 'when', 'where', 'which',
-  'who', 'will', 'with', 'you', 'your',
+  "a",
+  "an",
+  "and",
+  "are",
+  "as",
+  "at",
+  "be",
+  "by",
+  "for",
+  "from",
+  "has",
+  "have",
+  "how",
+  "i",
+  "in",
+  "is",
+  "it",
+  "its",
+  "of",
+  "on",
+  "or",
+  "that",
+  "the",
+  "this",
+  "to",
+  "was",
+  "were",
+  "what",
+  "when",
+  "where",
+  "which",
+  "who",
+  "will",
+  "with",
+  "you",
+  "your",
 ]);
 
 export function tokenize(text: string): string[] {
@@ -65,7 +93,7 @@ export class Searcher {
   ) {}
 
   async search(options: SearchOptions): Promise<SearchResult[]> {
-    const query = options.query?.trim() ?? '';
+    const query = options.query?.trim() ?? "";
     if (!query) return [];
     const limit = options.limit ?? this.defaultMaxResults;
     const results: SearchResult[] = [];
@@ -81,11 +109,14 @@ export class Searcher {
         minImportance: options.minImportance,
       });
       for (const memory of memories) {
-        const rel = textRelevance(query, `${memory.content} ${(memory.tags ?? []).join(' ')}`);
+        const rel = textRelevance(
+          query,
+          `${memory.content} ${(memory.tags ?? []).join(" ")}`,
+        );
         if (rel <= 0) continue;
         const score = rankMemory(memory, rel);
         results.push({
-          source: 'memory',
+          source: "memory",
           id: memory.id,
           projectId,
           label: memory.type,
@@ -99,15 +130,21 @@ export class Searcher {
       // -- Tasks ------------------------------------------------------------
       const tasks = await this.store.getTasks(projectId);
       for (const task of tasks) {
-        const rel = textRelevance(query, `${task.title} ${task.description ?? ''}`);
+        const rel = textRelevance(
+          query,
+          `${task.title} ${task.description ?? ""}`,
+        );
         if (rel <= 0) continue;
         results.push({
-          source: 'task',
+          source: "task",
           id: task.id,
           projectId,
           label: `${task.status}: ${task.title}`,
           snippet: truncate(task.description ?? task.title, 200),
-          score: Math.min(1, rel * 0.9 + (task.status === 'in_progress' ? 0.1 : 0)),
+          score: Math.min(
+            1,
+            rel * 0.9 + (task.status === "in_progress" ? 0.1 : 0),
+          ),
           createdAt: task.createdAt,
           record: task,
         });
@@ -116,13 +153,16 @@ export class Searcher {
       // -- Decisions --------------------------------------------------------
       const decisions = await this.store.getDecisions(projectId);
       for (const decision of decisions) {
-        const rel = textRelevance(query, `${decision.content} ${decision.rationale ?? ''}`);
+        const rel = textRelevance(
+          query,
+          `${decision.content} ${decision.rationale ?? ""}`,
+        );
         if (rel <= 0) continue;
         results.push({
-          source: 'decision',
+          source: "decision",
           id: decision.id,
           projectId,
-          label: 'decision',
+          label: "decision",
           snippet: truncate(decision.content, 200),
           score: Math.min(1, rel * 0.85 + decision.importance * 0.15),
           createdAt: decision.createdAt,
@@ -139,11 +179,11 @@ export class Searcher {
           ...handoff.completed,
           ...handoff.remaining,
           ...handoff.problems,
-        ].join(' ');
+        ].join(" ");
         const rel = textRelevance(query, blob);
         if (rel <= 0) continue;
         results.push({
-          source: 'handoff',
+          source: "handoff",
           id: handoff.id,
           projectId,
           label: `handoff: ${handoff.task}`,
@@ -161,7 +201,7 @@ export class Searcher {
         const rel = textRelevance(query, session.summary);
         if (rel <= 0) continue;
         results.push({
-          source: 'session',
+          source: "session",
           id: session.sessionId,
           projectId,
           label: `session (${session.agentId})`,
@@ -175,14 +215,18 @@ export class Searcher {
       // -- Context ----------------------------------------------------------
       const context = await this.store.getContext(projectId);
       if (context) {
-        const blob = [context.name, context.summary ?? '', context.currentTask ?? ''].join(' ');
+        const blob = [
+          context.name,
+          context.summary ?? "",
+          context.currentTask ?? "",
+        ].join(" ");
         const rel = textRelevance(query, blob);
         if (rel > 0) {
           results.push({
-            source: 'context',
+            source: "context",
             id: projectId,
             projectId,
-            label: 'project context',
+            label: "project context",
             snippet: truncate(blob, 200),
             score: Math.min(1, rel * 0.8),
             createdAt: context.lastUpdated,

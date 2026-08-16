@@ -1,14 +1,14 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { useTempMemoryHome, rmDir, initPlainWorkspace } from './helpers.js';
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { useTempMemoryHome, rmDir, initPlainWorkspace } from "./helpers.js";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const serverPath = path.join(root, 'dist', 'index.js');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const serverPath = path.join(root, "dist", "index.js");
 
 interface JsonRpcResponse {
-  jsonrpc: '2.0';
+  jsonrpc: "2.0";
   id: number;
   result?: any;
   error?: { code: number; message: string };
@@ -16,7 +16,7 @@ interface JsonRpcResponse {
 
 class McpClient {
   private child: ChildProcessWithoutNullStreams;
-  private buffer = '';
+  private buffer = "";
   private pending = new Map<number, (res: JsonRpcResponse) => void>();
   private nextId = 1;
 
@@ -25,10 +25,10 @@ class McpClient {
       env: { ...process.env, ...env },
       windowsHide: true,
     });
-    this.child.stdout.on('data', (chunk: Buffer) => {
-      this.buffer += chunk.toString('utf8');
+    this.child.stdout.on("data", (chunk: Buffer) => {
+      this.buffer += chunk.toString("utf8");
       let idx: number;
-      while ((idx = this.buffer.indexOf('\n')) >= 0) {
+      while ((idx = this.buffer.indexOf("\n")) >= 0) {
         const line = this.buffer.slice(0, idx).trim();
         this.buffer = this.buffer.slice(idx + 1);
         if (!line) continue;
@@ -47,7 +47,7 @@ class McpClient {
 
   request(method: string, params: any = {}): Promise<JsonRpcResponse> {
     const id = this.nextId++;
-    const payload = JSON.stringify({ jsonrpc: '2.0', id, method, params });
+    const payload = JSON.stringify({ jsonrpc: "2.0", id, method, params });
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(id);
@@ -57,12 +57,14 @@ class McpClient {
         clearTimeout(timer);
         resolve(res);
       });
-      this.child.stdin.write(payload + '\n');
+      this.child.stdin.write(payload + "\n");
     });
   }
 
   notify(method: string, params: any = {}): void {
-    this.child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method, params }) + '\n');
+    this.child.stdin.write(
+      JSON.stringify({ jsonrpc: "2.0", method, params }) + "\n",
+    );
   }
 
   async close(): Promise<void> {
@@ -71,26 +73,26 @@ class McpClient {
   }
 }
 
-describe('MCP stdio server (integration)', () => {
+describe("MCP stdio server (integration)", () => {
   let home: string;
   let workspace: string;
   let cleanupWs: () => Promise<void>;
   let client: McpClient;
 
   beforeAll(async () => {
-    home = await useTempMemoryHome('memhome-mcp');
+    home = await useTempMemoryHome("memhome-mcp");
     const ws = await initPlainWorkspace();
     workspace = ws.dir;
     cleanupWs = ws.cleanup;
     client = new McpClient({ AGENT_MEMORY_HOME: home });
 
-    const init = await client.request('initialize', {
-      protocolVersion: '2024-11-05',
+    const init = await client.request("initialize", {
+      protocolVersion: "2024-11-05",
       capabilities: {},
-      clientInfo: { name: 'vitest', version: '1.0.0' },
+      clientInfo: { name: "vitest", version: "1.0.0" },
     });
-    expect(init.result.serverInfo.name).toBe('memory-mcp');
-    client.notify('notifications/initialized');
+    expect(init.result.serverInfo.name).toBe("memory-mcp");
+    client.notify("notifications/initialized");
   });
 
   afterAll(async () => {
@@ -99,123 +101,127 @@ describe('MCP stdio server (integration)', () => {
     await rmDir(home);
   });
 
-  it('lists all 15 tools', async () => {
-    const res = await client.request('tools/list');
+  it("lists all 15 tools", async () => {
+    const res = await client.request("tools/list");
     const names = res.result.tools.map((t: any) => t.name).sort();
     expect(names).toEqual(
       [
-        'clear_memory',
-        'create_handoff',
-        'delete_project_memory',
-        'finish_session',
-        'get_current_task',
-        'get_decisions',
-        'get_latest_handoff',
-        'get_memory',
-        'get_project_context',
-        'initialize_project_context',
-        'record_decision',
-        'save_memory',
-        'search_memory',
-        'start_session',
-        'update_task',
+        "clear_memory",
+        "create_handoff",
+        "delete_project_memory",
+        "finish_session",
+        "get_current_task",
+        "get_decisions",
+        "get_latest_handoff",
+        "get_memory",
+        "get_project_context",
+        "initialize_project_context",
+        "record_decision",
+        "save_memory",
+        "search_memory",
+        "start_session",
+        "update_task",
       ].sort(),
     );
   });
 
-  it('initialize_project_context returns a briefing and registers the project', async () => {
-    const res = await client.request('tools/call', {
-      name: 'initialize_project_context',
-      arguments: { workspacePath: workspace, agentId: 'vitest' },
+  it("initialize_project_context returns a briefing and registers the project", async () => {
+    const res = await client.request("tools/call", {
+      name: "initialize_project_context",
+      arguments: { workspacePath: workspace, agentId: "vitest" },
     });
     expect(res.result.isError).toBeFalsy();
     const text = res.result.content[0].text as string;
-    expect(text).toContain('PROJECT:');
-    expect(text).toContain('[projectId: proj_');
+    expect(text).toContain("PROJECT:");
+    expect(text).toContain("[projectId: proj_");
   });
 
-  it('full agent workflow: session -> memory -> decision -> task -> handoff', async () => {
+  it("full agent workflow: session -> memory -> decision -> task -> handoff", async () => {
     const call = async (name: string, args: any) => {
-      const res = await client.request('tools/call', { name, arguments: args });
+      const res = await client.request("tools/call", { name, arguments: args });
       expect(res.result.isError).toBeFalsy();
       return JSON.parse(res.result.content[0].text);
     };
 
-    const session = await call('start_session', {
+    const session = await call("start_session", {
       workspacePath: workspace,
-      agentId: 'vitest',
-      agentName: 'Vitest',
+      agentId: "vitest",
+      agentName: "Vitest",
     });
     expect(session.sessionId).toMatch(/^sess_/);
 
-    const memory = await call('save_memory', {
+    const memory = await call("save_memory", {
       workspacePath: workspace,
-      type: 'decision',
-      content: 'Use PostgreSQL for persistence',
+      type: "decision",
+      content: "Use PostgreSQL for persistence",
       importance: 0.9,
     });
     expect(memory.id).toMatch(/^mem_/);
 
-    const decision = await call('record_decision', {
+    const decision = await call("record_decision", {
       workspacePath: workspace,
-      content: 'Adopt event sourcing for the audit log',
+      content: "Adopt event sourcing for the audit log",
       importance: 0.85,
     });
     expect(decision.id).toMatch(/^dec_/);
 
-    const task = await call('update_task', {
+    const task = await call("update_task", {
       workspacePath: workspace,
-      title: 'Implement audit log',
-      status: 'in_progress',
+      title: "Implement audit log",
+      status: "in_progress",
     });
     expect(task.id).toMatch(/^task_/);
 
-    const current = await call('get_current_task', { workspacePath: workspace });
-    expect(current.currentTask.title).toBe('Implement audit log');
-
-    const search = await call('search_memory', {
+    const current = await call("get_current_task", {
       workspacePath: workspace,
-      query: 'audit',
+    });
+    expect(current.currentTask.title).toBe("Implement audit log");
+
+    const search = await call("search_memory", {
+      workspacePath: workspace,
+      query: "audit",
     });
     expect(Array.isArray(search)).toBe(true);
     expect(search.length).toBeGreaterThan(0);
 
-    const handoff = await call('create_handoff', {
+    const handoff = await call("create_handoff", {
       workspacePath: workspace,
-      agentId: 'vitest',
-      task: 'Implement audit log',
-      completed: ['Schema designed'],
-      remaining: ['Write event store'],
+      agentId: "vitest",
+      task: "Implement audit log",
+      completed: ["Schema designed"],
+      remaining: ["Write event store"],
       problems: [],
       changedFiles: [],
-      nextAction: 'Write event store module',
+      nextAction: "Write event store module",
     });
     expect(handoff.id).toMatch(/^ho_/);
 
-    const latest = await call('get_latest_handoff', { workspacePath: workspace });
-    expect(latest.nextAction).toBe('Write event store module');
+    const latest = await call("get_latest_handoff", {
+      workspacePath: workspace,
+    });
+    expect(latest.nextAction).toBe("Write event store module");
 
-    const finished = await call('finish_session', {
+    const finished = await call("finish_session", {
       workspacePath: workspace,
       sessionId: session.sessionId,
-      summary: 'Designed audit log schema',
+      summary: "Designed audit log schema",
     });
-    expect(finished.status).toBe('completed');
+    expect(finished.status).toBe("completed");
 
     // A second "agent" picks up the project and sees the handoff.
-    const briefingRes = await client.request('tools/call', {
-      name: 'initialize_project_context',
-      arguments: { workspacePath: workspace, agentId: 'other-agent' },
+    const briefingRes = await client.request("tools/call", {
+      name: "initialize_project_context",
+      arguments: { workspacePath: workspace, agentId: "other-agent" },
     });
     expect(briefingRes.result.isError).toBeFalsy();
     const briefingText = briefingRes.result.content[0].text as string;
-    expect(briefingText).toContain('Write event store module');
+    expect(briefingText).toContain("Write event store module");
   });
 
-  it('rejects invalid tool input', async () => {
-    const res = await client.request('tools/call', {
-      name: 'save_memory',
-      arguments: { workspacePath: workspace, type: 'not-a-type', content: 'x' },
+  it("rejects invalid tool input", async () => {
+    const res = await client.request("tools/call", {
+      name: "save_memory",
+      arguments: { workspacePath: workspace, type: "not-a-type", content: "x" },
     });
     expect(res.result.isError).toBe(true);
   });

@@ -5,7 +5,7 @@
  * This layer sits between the MCP tools and the MemoryStore and is where
  * defaults (importance/confidence), validation and id generation live.
  */
-import type { MemoryStore } from '../storage/interface.js';
+import type { MemoryStore } from "../storage/interface.js";
 import type {
   Decision,
   Memory,
@@ -15,9 +15,9 @@ import type {
   ProjectStatus,
   Task,
   TaskStatus,
-} from '../types.js';
-import { PROJECT_STATUSES, TASK_STATUSES, isMemoryType } from '../types.js';
-import { clamp01, newId, nowIso } from '../util.js';
+} from "../types.js";
+import { PROJECT_STATUSES, TASK_STATUSES, isMemoryType } from "../types.js";
+import { clamp01, newId, nowIso } from "../util.js";
 
 export interface SaveMemoryInput {
   projectId: string;
@@ -76,10 +76,12 @@ export class MemoryManager {
       throw new Error(`Invalid memory type: ${String(input.type)}`);
     }
     const content = input.content?.trim();
-    if (!content) throw new Error('Memory content must not be empty');
+    if (!content) throw new Error("Memory content must not be empty");
 
     const now = nowIso();
-    const existing = input.id ? await this.store.getMemory(input.projectId, input.id) : null;
+    const existing = input.id
+      ? await this.store.getMemory(input.projectId, input.id)
+      : null;
 
     const memory: Memory = existing
       ? {
@@ -95,7 +97,7 @@ export class MemoryManager {
           updatedAt: now,
         }
       : {
-          id: newId('mem'),
+          id: newId("mem"),
           projectId: input.projectId,
           type: input.type,
           content,
@@ -117,7 +119,10 @@ export class MemoryManager {
     return this.store.getMemory(projectId, memoryId);
   }
 
-  async getMemories(projectId: string, filter?: MemoryFilter): Promise<Memory[]> {
+  async getMemories(
+    projectId: string,
+    filter?: MemoryFilter,
+  ): Promise<Memory[]> {
     return this.store.getMemories(projectId, filter);
   }
 
@@ -129,10 +134,10 @@ export class MemoryManager {
 
   async recordDecision(input: SaveDecisionInput): Promise<Decision> {
     const content = input.content?.trim();
-    if (!content) throw new Error('Decision content must not be empty');
+    if (!content) throw new Error("Decision content must not be empty");
     const now = nowIso();
     const decision: Decision = {
-      id: newId('dec'),
+      id: newId("dec"),
       projectId: input.projectId,
       content,
       rationale: input.rationale?.trim() || undefined,
@@ -141,7 +146,7 @@ export class MemoryManager {
       confidence: clamp01(input.confidence, 0.8),
       agentId: input.agentId,
       sessionId: input.sessionId,
-      status: 'active',
+      status: "active",
       createdAt: now,
       updatedAt: now,
     };
@@ -149,13 +154,13 @@ export class MemoryManager {
 
     // Decisions are also valuable as searchable memories.
     await this.store.saveMemory({
-      id: newId('mem'),
+      id: newId("mem"),
       projectId: input.projectId,
-      type: 'decision',
+      type: "decision",
       content,
       importance: decision.importance,
       confidence: decision.confidence,
-      source: 'record_decision',
+      source: "record_decision",
       agentId: input.agentId,
       sessionId: input.sessionId,
       createdAt: now,
@@ -164,9 +169,14 @@ export class MemoryManager {
     return decision;
   }
 
-  async getDecisions(projectId: string, activeOnly = false): Promise<Decision[]> {
+  async getDecisions(
+    projectId: string,
+    activeOnly = false,
+  ): Promise<Decision[]> {
     const decisions = await this.store.getDecisions(projectId);
-    const filtered = activeOnly ? decisions.filter((d) => d.status === 'active') : decisions;
+    const filtered = activeOnly
+      ? decisions.filter((d) => d.status === "active")
+      : decisions;
     return [...filtered].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
@@ -183,14 +193,17 @@ export class MemoryManager {
     relatedFiles?: string[];
   }): Promise<Task> {
     const title = input.title?.trim();
-    if (!title) throw new Error('Task title must not be empty');
+    if (!title) throw new Error("Task title must not be empty");
     const now = nowIso();
     const task: Task = {
-      id: newId('task'),
+      id: newId("task"),
       projectId: input.projectId,
       title,
       description: input.description?.trim() || undefined,
-      status: input.status && TASK_STATUSES.includes(input.status) ? input.status : 'active',
+      status:
+        input.status && TASK_STATUSES.includes(input.status)
+          ? input.status
+          : "active",
       priority: clamp01(input.priority, 0.5),
       agentId: input.agentId,
       sessionId: input.sessionId,
@@ -209,14 +222,27 @@ export class MemoryManager {
     const updated: Task = {
       ...existing,
       title: input.title?.trim() || existing.title,
-      description: input.description !== undefined ? input.description.trim() || undefined : existing.description,
-      status: input.status && TASK_STATUSES.includes(input.status) ? input.status : existing.status,
-      priority: input.priority !== undefined ? clamp01(input.priority, existing.priority ?? 0.5) : existing.priority,
+      description:
+        input.description !== undefined
+          ? input.description.trim() || undefined
+          : existing.description,
+      status:
+        input.status && TASK_STATUSES.includes(input.status)
+          ? input.status
+          : existing.status,
+      priority:
+        input.priority !== undefined
+          ? clamp01(input.priority, existing.priority ?? 0.5)
+          : existing.priority,
       relatedFiles: input.relatedFiles ?? existing.relatedFiles,
       agentId: input.agentId ?? existing.agentId,
       updatedAt: now,
       completedAt:
-        input.status === 'completed' ? now : input.status ? undefined : existing.completedAt,
+        input.status === "completed"
+          ? now
+          : input.status
+            ? undefined
+            : existing.completedAt,
     };
     await this.store.saveTask(updated);
     return updated;
@@ -235,9 +261,9 @@ export class MemoryManager {
   async getCurrentTask(projectId: string): Promise<Task | null> {
     const tasks = await this.getTasks(projectId);
     return (
-      tasks.find((t) => t.status === 'in_progress') ??
-      tasks.find((t) => t.status === 'active') ??
-      tasks.find((t) => t.status === 'blocked') ??
+      tasks.find((t) => t.status === "in_progress") ??
+      tasks.find((t) => t.status === "active") ??
+      tasks.find((t) => t.status === "blocked") ??
       null
     );
   }
@@ -251,19 +277,27 @@ export class MemoryManager {
   async updateContext(input: UpdateContextInput): Promise<ProjectContext> {
     const existing = (await this.store.getContext(input.projectId)) ?? {
       projectId: input.projectId,
-      name: '',
+      name: "",
       technology: [],
-      status: 'unknown' as ProjectStatus,
+      status: "unknown" as ProjectStatus,
       lastUpdated: nowIso(),
     };
     const updated: ProjectContext = {
       ...existing,
       name: input.name?.trim() || existing.name,
       technology: input.technology ?? existing.technology,
-      currentTask: input.currentTask !== undefined ? input.currentTask.trim() || undefined : existing.currentTask,
+      currentTask:
+        input.currentTask !== undefined
+          ? input.currentTask.trim() || undefined
+          : existing.currentTask,
       status:
-        input.status && PROJECT_STATUSES.includes(input.status) ? input.status : existing.status,
-      summary: input.summary !== undefined ? input.summary.trim() || undefined : existing.summary,
+        input.status && PROJECT_STATUSES.includes(input.status)
+          ? input.status
+          : existing.status,
+      summary:
+        input.summary !== undefined
+          ? input.summary.trim() || undefined
+          : existing.summary,
       lastAgent: input.lastAgent ?? existing.lastAgent,
       lastSession: input.lastSession ?? existing.lastSession,
       lastUpdated: nowIso(),

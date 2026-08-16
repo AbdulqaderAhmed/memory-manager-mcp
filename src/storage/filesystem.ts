@@ -20,16 +20,16 @@
  * Concurrency: read-modify-write operations take a per-project advisory
  * lock; append-only writes use O_APPEND + fsync.
  */
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import type { MemoryStore } from './interface.js';
+import fs from "node:fs/promises";
+import path from "node:path";
+import type { MemoryStore } from "./interface.js";
 import {
   appendJsonLine,
   readJsonl,
   readJsonOrNull,
   withLock,
   writeJsonAtomic,
-} from './fsutil.js';
+} from "./fsutil.js";
 import {
   getContextFile,
   getDecisionsFile,
@@ -45,7 +45,7 @@ import {
   getSessionsDir,
   getTasksFile,
   sanitizeSegment,
-} from './paths.js';
+} from "./paths.js";
 import type {
   Decision,
   Handoff,
@@ -56,8 +56,8 @@ import type {
   ProjectContext,
   Session,
   Task,
-} from '../types.js';
-import { isDeletedMarker } from '../types.js';
+} from "../types.js";
+import { isDeletedMarker } from "../types.js";
 
 export class FileSystemMemoryStore implements MemoryStore {
   constructor(private readonly root: string) {}
@@ -82,7 +82,9 @@ export class FileSystemMemoryStore implements MemoryStore {
     }
     const projects: Project[] = [];
     for (const entry of entries) {
-      const project = await readJsonOrNull<Project>(path.join(dir, entry, 'project.json'));
+      const project = await readJsonOrNull<Project>(
+        path.join(dir, entry, "project.json"),
+      );
       if (project) projects.push(project);
     }
     projects.sort((a, b) => b.lastActivityAt.localeCompare(a.lastActivityAt));
@@ -100,12 +102,18 @@ export class FileSystemMemoryStore implements MemoryStore {
   }
 
   async saveContext(context: ProjectContext): Promise<void> {
-    await writeJsonAtomic(getContextFile(context.projectId, this.root), context);
+    await writeJsonAtomic(
+      getContextFile(context.projectId, this.root),
+      context,
+    );
   }
 
   // -- Memories (append-only JSONL with versioning + tombstones) ------------
 
-  async getMemories(projectId: string, filter?: MemoryFilter): Promise<Memory[]> {
+  async getMemories(
+    projectId: string,
+    filter?: MemoryFilter,
+  ): Promise<Memory[]> {
     const memories = await this.materializeMemories(projectId);
     let result = memories;
     if (filter) {
@@ -151,10 +159,16 @@ export class FileSystemMemoryStore implements MemoryStore {
    * tombstones remove entries. Result is sorted newest-first by updatedAt.
    */
   private async materializeMemories(projectId: string): Promise<Memory[]> {
-    const entries = await readJsonl<MemoryLogEntry>(getMemoriesFile(projectId, this.root));
+    const entries = await readJsonl<MemoryLogEntry>(
+      getMemoriesFile(projectId, this.root),
+    );
     const byId = new Map<string, Memory>();
     for (const entry of entries) {
-      if (!entry || typeof entry !== 'object' || typeof (entry as Memory).id !== 'string') {
+      if (
+        !entry ||
+        typeof entry !== "object" ||
+        typeof (entry as Memory).id !== "string"
+      ) {
         continue;
       }
       if (isDeletedMarker(entry)) {
@@ -163,13 +177,17 @@ export class FileSystemMemoryStore implements MemoryStore {
         byId.set(entry.id, entry);
       }
     }
-    return [...byId.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    return [...byId.values()].sort((a, b) =>
+      b.updatedAt.localeCompare(a.updatedAt),
+    );
   }
 
   // -- Tasks ----------------------------------------------------------------
 
   async getTasks(projectId: string): Promise<Task[]> {
-    const tasks = await readJsonOrNull<Task[]>(getTasksFile(projectId, this.root));
+    const tasks = await readJsonOrNull<Task[]>(
+      getTasksFile(projectId, this.root),
+    );
     return Array.isArray(tasks) ? tasks : [];
   }
 
@@ -203,7 +221,9 @@ export class FileSystemMemoryStore implements MemoryStore {
   // -- Decisions ------------------------------------------------------------
 
   async getDecisions(projectId: string): Promise<Decision[]> {
-    const decisions = await readJsonOrNull<Decision[]>(getDecisionsFile(projectId, this.root));
+    const decisions = await readJsonOrNull<Decision[]>(
+      getDecisionsFile(projectId, this.root),
+    );
     return Array.isArray(decisions) ? decisions : [];
   }
 
@@ -214,14 +234,22 @@ export class FileSystemMemoryStore implements MemoryStore {
       const idx = decisions.findIndex((d) => d.id === decision.id);
       if (idx >= 0) decisions[idx] = decision;
       else decisions.push(decision);
-      await writeJsonAtomic(getDecisionsFile(decision.projectId, this.root), decisions);
+      await writeJsonAtomic(
+        getDecisionsFile(decision.projectId, this.root),
+        decisions,
+      );
     });
   }
 
   // -- Sessions -------------------------------------------------------------
 
-  async getSession(projectId: string, sessionId: string): Promise<Session | null> {
-    return readJsonOrNull<Session>(getSessionFile(projectId, sessionId, this.root));
+  async getSession(
+    projectId: string,
+    sessionId: string,
+  ): Promise<Session | null> {
+    return readJsonOrNull<Session>(
+      getSessionFile(projectId, sessionId, this.root),
+    );
   }
 
   async listSessions(projectId: string): Promise<Session[]> {
@@ -234,7 +262,7 @@ export class FileSystemMemoryStore implements MemoryStore {
     }
     const sessions: Session[] = [];
     for (const entry of entries) {
-      if (!entry.endsWith('.json')) continue;
+      if (!entry.endsWith(".json")) continue;
       const session = await readJsonOrNull<Session>(path.join(dir, entry));
       if (session) sessions.push(session);
     }
@@ -243,7 +271,10 @@ export class FileSystemMemoryStore implements MemoryStore {
   }
 
   async saveSession(session: Session): Promise<void> {
-    await writeJsonAtomic(getSessionFile(session.projectId, session.sessionId, this.root), session);
+    await writeJsonAtomic(
+      getSessionFile(session.projectId, session.sessionId, this.root),
+      session,
+    );
   }
 
   // -- Handoffs -------------------------------------------------------------
@@ -262,7 +293,7 @@ export class FileSystemMemoryStore implements MemoryStore {
     }
     const handoffs: Handoff[] = [];
     for (const entry of entries) {
-      if (!entry.endsWith('.json')) continue;
+      if (!entry.endsWith(".json")) continue;
       const handoff = await readJsonOrNull<Handoff>(path.join(dir, entry));
       if (handoff) handoffs.push(handoff);
     }
@@ -273,14 +304,19 @@ export class FileSystemMemoryStore implements MemoryStore {
   async saveHandoff(handoff: Handoff): Promise<void> {
     const lockPath = getProjectLockFile(handoff.projectId, this.root);
     await withLock(lockPath, async () => {
-      await fs.mkdir(getHandoffsDir(handoff.projectId, this.root), { recursive: true });
-      const stamp = handoff.createdAt.replace(/[:.]/g, '-');
+      await fs.mkdir(getHandoffsDir(handoff.projectId, this.root), {
+        recursive: true,
+      });
+      const stamp = handoff.createdAt.replace(/[:.]/g, "-");
       const historyFile = path.join(
         getHandoffHistoryDir(handoff.projectId, this.root),
         `${stamp}-${sanitizeSegment(handoff.id)}.json`,
       );
       await writeJsonAtomic(historyFile, handoff);
-      await writeJsonAtomic(getLatestHandoffFile(handoff.projectId, this.root), handoff);
+      await writeJsonAtomic(
+        getLatestHandoffFile(handoff.projectId, this.root),
+        handoff,
+      );
     });
   }
 

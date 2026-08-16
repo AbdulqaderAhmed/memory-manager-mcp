@@ -15,7 +15,7 @@ import type {
   ProjectContext,
   Session,
   Task,
-} from '../types.js';
+} from "../types.js";
 
 export interface MemoryStore {
   // -- Projects -------------------------------------------------------------

@@ -5,18 +5,22 @@
  * exposes the high-level operations used by both the MCP tool layer and the
  * CLI. Keeping this facade means the MCP layer stays thin and testable.
  */
-import { FileSystemMemoryStore } from './storage/filesystem.js';
-import type { MemoryStore } from './storage/interface.js';
-import { getMemoryRoot } from './storage/paths.js';
-import { loadConfig, type LoadedConfig } from './config.js';
-import { ProjectRegistry } from './project/registry.js';
-import { detectProject } from './project/detector.js';
-import { MemoryManager } from './memory/manager.js';
-import { SessionManager } from './session/manager.js';
-import { HandoffManager } from './handoff/manager.js';
-import { Searcher } from './search/searcher.js';
-import { ContextBuilder, type BuiltContext, type BuildContextOptions } from './context/builder.js';
-import type { Project, ProjectDetection } from './types.js';
+import { FileSystemMemoryStore } from "./storage/filesystem.js";
+import type { MemoryStore } from "./storage/interface.js";
+import { getMemoryRoot } from "./storage/paths.js";
+import { loadConfig, type LoadedConfig } from "./config.js";
+import { ProjectRegistry } from "./project/registry.js";
+import { detectProject } from "./project/detector.js";
+import { MemoryManager } from "./memory/manager.js";
+import { SessionManager } from "./session/manager.js";
+import { HandoffManager } from "./handoff/manager.js";
+import { Searcher } from "./search/searcher.js";
+import {
+  ContextBuilder,
+  type BuiltContext,
+  type BuildContextOptions,
+} from "./context/builder.js";
+import type { Project, ProjectDetection } from "./types.js";
 
 export interface MemoryServiceOptions {
   /** Override the memory root (defaults to ~/.agent-memory). */
@@ -72,9 +76,10 @@ export class MemoryService {
   /** Build the full context briefing for a workspace. */
   async initializeContext(
     workspacePath?: string,
-    options?: Omit<BuildContextOptions, 'workspacePath'>,
+    options?: Omit<BuildContextOptions, "workspacePath">,
   ): Promise<BuiltContext & { detection: ProjectDetection; isNew: boolean }> {
-    const { detection, project, isNew } = await this.detectAndRegister(workspacePath);
+    const { detection, project, isNew } =
+      await this.detectAndRegister(workspacePath);
     const built = await this.contextBuilder.build(project, {
       ...options,
       workspacePath: detection.workspacePath,

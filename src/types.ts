@@ -12,23 +12,26 @@
 // ---------------------------------------------------------------------------
 
 export const MEMORY_TYPES = [
-  'requirement',
-  'decision',
-  'architecture',
-  'task',
-  'problem',
-  'solution',
-  'progress',
-  'fact',
-  'preference',
-  'constraint',
-  'discovery',
+  "requirement",
+  "decision",
+  "architecture",
+  "task",
+  "problem",
+  "solution",
+  "progress",
+  "fact",
+  "preference",
+  "constraint",
+  "discovery",
 ] as const;
 
 export type MemoryType = (typeof MEMORY_TYPES)[number];
 
 export function isMemoryType(value: unknown): value is MemoryType {
-  return typeof value === 'string' && (MEMORY_TYPES as readonly string[]).includes(value);
+  return (
+    typeof value === "string" &&
+    (MEMORY_TYPES as readonly string[]).includes(value)
+  );
 }
 
 /**
@@ -64,7 +67,9 @@ export interface MemoryDeletedMarker {
 
 export type MemoryLogEntry = Memory | MemoryDeletedMarker;
 
-export function isDeletedMarker(entry: MemoryLogEntry): entry is MemoryDeletedMarker {
+export function isDeletedMarker(
+  entry: MemoryLogEntry,
+): entry is MemoryDeletedMarker {
   return (entry as MemoryDeletedMarker).deleted === true;
 }
 
@@ -79,7 +84,7 @@ export interface MemoryFilter {
 // Project
 // ---------------------------------------------------------------------------
 
-export type ProjectIdentityKind = 'git' | 'identity-file' | 'path';
+export type ProjectIdentityKind = "git" | "identity-file" | "path";
 
 export interface ProjectIdentity {
   kind: ProjectIdentityKind;
@@ -114,11 +119,11 @@ export interface Project {
 // ---------------------------------------------------------------------------
 
 export const PROJECT_STATUSES = [
-  'unknown',
-  'in_progress',
-  'paused',
-  'blocked',
-  'completed',
+  "unknown",
+  "in_progress",
+  "paused",
+  "blocked",
+  "completed",
 ] as const;
 
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
@@ -140,17 +145,19 @@ export interface ProjectContext {
 // ---------------------------------------------------------------------------
 
 export const TASK_STATUSES = [
-  'active',
-  'in_progress',
-  'completed',
-  'blocked',
-  'abandoned',
+  "active",
+  "in_progress",
+  "completed",
+  "blocked",
+  "abandoned",
 ] as const;
 
 export type TaskStatus = (typeof TASK_STATUSES)[number];
 
 export function isOpenTaskStatus(status: TaskStatus): boolean {
-  return status === 'active' || status === 'in_progress' || status === 'blocked';
+  return (
+    status === "active" || status === "in_progress" || status === "blocked"
+  );
 }
 
 export interface Task {
@@ -183,7 +190,7 @@ export interface Decision {
   confidence: number;
   agentId?: string;
   sessionId?: string;
-  status: 'active' | 'superseded';
+  status: "active" | "superseded";
   createdAt: string;
   updatedAt: string;
 }
@@ -193,10 +200,10 @@ export interface Decision {
 // ---------------------------------------------------------------------------
 
 export const SESSION_STATUSES = [
-  'active',
-  'completed',
-  'interrupted',
-  'abandoned',
+  "active",
+  "completed",
+  "interrupted",
+  "abandoned",
 ] as const;
 
 export type SessionStatus = (typeof SESSION_STATUSES)[number];
@@ -271,12 +278,12 @@ export interface GitInfo {
 // ---------------------------------------------------------------------------
 
 export type SearchSourceType =
-  | 'memory'
-  | 'task'
-  | 'decision'
-  | 'handoff'
-  | 'session'
-  | 'context';
+  | "memory"
+  | "task"
+  | "decision"
+  | "handoff"
+  | "session"
+  | "context";
 
 export interface SearchResult {
   source: SearchSourceType;
@@ -309,7 +316,7 @@ export interface SearchOptions {
 
 export interface MemoryConfig {
   storage: {
-    type: 'filesystem';
+    type: "filesystem";
   };
   memory: {
     maxContextItems: number;
@@ -321,7 +328,7 @@ export interface MemoryConfig {
 }
 
 export const DEFAULT_CONFIG: MemoryConfig = {
-  storage: { type: 'filesystem' },
+  storage: { type: "filesystem" },
   memory: { maxContextItems: 20, enableRawSessions: true },
   search: { maxResults: 20 },
 };

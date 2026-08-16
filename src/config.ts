@@ -4,12 +4,17 @@
  * Missing keys fall back to safe defaults; unknown keys are ignored. The
  * config file is created on first use so users can discover and edit it.
  */
-import { DEFAULT_CONFIG, type MemoryConfig } from './types.js';
-import { getConfigPath, getMemoryRoot } from './storage/paths.js';
-import { readJsonOrNull, writeJsonAtomic } from './storage/fsutil.js';
+import { DEFAULT_CONFIG, type MemoryConfig } from "./types.js";
+import { getConfigPath, getMemoryRoot } from "./storage/paths.js";
+import { readJsonOrNull, writeJsonAtomic } from "./storage/fsutil.js";
 
-function clampInt(value: unknown, fallback: number, min: number, max: number): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
+function clampInt(
+  value: unknown,
+  fallback: number,
+  min: number,
+  max: number,
+): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
   return Math.min(max, Math.max(min, Math.round(value)));
 }
 
@@ -17,16 +22,26 @@ function clampInt(value: unknown, fallback: number, min: number, max: number): n
 export function normalizeConfig(partial: unknown): MemoryConfig {
   const p = (partial ?? {}) as Record<string, any>;
   return {
-    storage: { type: 'filesystem' },
+    storage: { type: "filesystem" },
     memory: {
-      maxContextItems: clampInt(p?.memory?.maxContextItems, DEFAULT_CONFIG.memory.maxContextItems, 1, 200),
+      maxContextItems: clampInt(
+        p?.memory?.maxContextItems,
+        DEFAULT_CONFIG.memory.maxContextItems,
+        1,
+        200,
+      ),
       enableRawSessions:
-        typeof p?.memory?.enableRawSessions === 'boolean'
+        typeof p?.memory?.enableRawSessions === "boolean"
           ? p.memory.enableRawSessions
           : DEFAULT_CONFIG.memory.enableRawSessions,
     },
     search: {
-      maxResults: clampInt(p?.search?.maxResults, DEFAULT_CONFIG.search.maxResults, 1, 200),
+      maxResults: clampInt(
+        p?.search?.maxResults,
+        DEFAULT_CONFIG.search.maxResults,
+        1,
+        200,
+      ),
     },
   };
 }

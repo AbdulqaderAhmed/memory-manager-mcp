@@ -2,7 +2,7 @@
  * Compressor — small helpers to keep generated context within a token-ish
  * budget. V1 uses character budgets as a cheap proxy for tokens.
  */
-import { truncate } from '../util.js';
+import { truncate } from "../util.js";
 
 export interface BudgetOptions {
   /** Max characters for the whole briefing. */
@@ -18,7 +18,7 @@ export const DEFAULT_BUDGET: Required<BudgetOptions> = {
 
 export function compressItem(text: string, options?: BudgetOptions): string {
   const max = options?.maxItemChars ?? DEFAULT_BUDGET.maxItemChars;
-  return truncate(text.replace(/\s+/g, ' ').trim(), max);
+  return truncate(text.replace(/\s+/g, " ").trim(), max);
 }
 
 /**
@@ -40,5 +40,5 @@ export function fitBudget(sections: string[], options?: BudgetOptions): string {
     parts.push(section);
     used += cost;
   }
-  return parts.join('\n\n');
+  return parts.join("\n\n");
 }

@@ -9,7 +9,7 @@
  * and constraints stay relevant for a very long time, while transient
  * debugging observations decay quickly.
  */
-import type { Memory, MemoryType } from '../types.js';
+import type { Memory, MemoryType } from "../types.js";
 
 /** Half-life (days) of a memory type's recency contribution. */
 export const TYPE_HALF_LIFE_DAYS: Record<MemoryType, number> = {
@@ -44,7 +44,10 @@ export const TYPE_WEIGHT: Record<MemoryType, number> = {
 const MS_PER_DAY = 86_400_000;
 
 /** Exponential recency decay: 1.0 now, 0.5 after one half-life. */
-export function recencyScore(updatedAt: string, now: Date = new Date()): number {
+export function recencyScore(
+  updatedAt: string,
+  now: Date = new Date(),
+): number {
   const then = new Date(updatedAt).getTime();
   if (Number.isNaN(then)) return 0;
   const ageDays = Math.max(0, (now.getTime() - then) / MS_PER_DAY);
@@ -52,7 +55,10 @@ export function recencyScore(updatedAt: string, now: Date = new Date()): number 
   return Math.pow(0.5, ageDays / 90);
 }
 
-export function typeRecencyScore(memory: Memory, now: Date = new Date()): number {
+export function typeRecencyScore(
+  memory: Memory,
+  now: Date = new Date(),
+): number {
   const then = new Date(memory.updatedAt).getTime();
   if (Number.isNaN(then)) return 0;
   const ageDays = Math.max(0, (now.getTime() - then) / MS_PER_DAY);
@@ -89,7 +95,8 @@ export function rankMemory(
   now: Date = new Date(),
 ): number {
   const w = { ...DEFAULT_WEIGHTS, ...weights };
-  const total = w.textRelevance + w.importance + w.confidence + w.recency + w.type;
+  const total =
+    w.textRelevance + w.importance + w.confidence + w.recency + w.type;
   const score =
     (w.textRelevance * clamp01Local(textRelevance) +
       w.importance * clamp01Local(memory.importance) +
@@ -108,7 +115,10 @@ export function rankMemories(
   now: Date = new Date(),
 ): Array<{ memory: Memory; score: number }> {
   return memories
-    .map((memory) => ({ memory, score: rankMemory(memory, textRelevanceOf(memory), weights, now) }))
+    .map((memory) => ({
+      memory,
+      score: rankMemory(memory, textRelevanceOf(memory), weights, now),
+    }))
     .sort((a, b) => b.score - a.score);
 }
 

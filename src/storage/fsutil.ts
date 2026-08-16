@@ -3,10 +3,10 @@
  * reads, JSONL append/read with partial-line recovery, and cross-process
  * advisory locking.
  */
-import fs from 'node:fs/promises';
-import { existsSync } from 'node:fs';
-import path from 'node:path';
-import crypto from 'node:crypto';
+import fs from "node:fs/promises";
+import { existsSync } from "node:fs";
+import path from "node:path";
+import crypto from "node:crypto";
 
 // ---------------------------------------------------------------------------
 // Atomic writes
@@ -17,17 +17,20 @@ import crypto from 'node:crypto';
  *   write temp file (same directory) -> flush (fsync) -> rename over target.
  * A crash at any point leaves either the old file or the new file intact.
  */
-export async function atomicWriteFile(filePath: string, data: string): Promise<void> {
+export async function atomicWriteFile(
+  filePath: string,
+  data: string,
+): Promise<void> {
   const dir = path.dirname(filePath);
   await fs.mkdir(dir, { recursive: true });
   const tmp = path.join(
     dir,
-    `.${path.basename(filePath)}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`,
+    `.${path.basename(filePath)}.${process.pid}.${crypto.randomBytes(4).toString("hex")}.tmp`,
   );
   let handle: fs.FileHandle | undefined;
   try {
-    handle = await fs.open(tmp, 'w');
-    await handle.writeFile(data, 'utf8');
+    handle = await fs.open(tmp, "w");
+    await handle.writeFile(data, "utf8");
     await handle.sync();
   } finally {
     await handle?.close().catch(() => {});
@@ -39,18 +42,24 @@ export async function atomicWriteFile(filePath: string, data: string): Promise<v
     throw err;
   }
   // Best-effort: fsync the directory so the rename itself is durable.
-  await fs.open(dir, 'r').then(async (dh) => {
-    try {
-      await dh.sync();
-    } catch {
-      /* fsync on directories is not supported everywhere (e.g. Windows) */
-    } finally {
-      await dh.close();
-    }
-  }).catch(() => {});
+  await fs
+    .open(dir, "r")
+    .then(async (dh) => {
+      try {
+        await dh.sync();
+      } catch {
+        /* fsync on directories is not supported everywhere (e.g. Windows) */
+      } finally {
+        await dh.close();
+      }
+    })
+    .catch(() => {});
 }
 
-export async function writeJsonAtomic(filePath: string, value: unknown): Promise<void> {
+export async function writeJsonAtomic(
+  filePath: string,
+  value: unknown,
+): Promise<void> {
   await atomicWriteFile(filePath, `${JSON.stringify(value, null, 2)}\n`);
 }
 
@@ -61,10 +70,10 @@ export async function writeJsonAtomic(filePath: string, value: unknown): Promise
 /** Read and parse JSON. Returns null when the file is missing or corrupt. */
 export async function readJsonOrNull<T>(filePath: string): Promise<T | null> {
   try {
-    const raw = await fs.readFile(filePath, 'utf8');
+    const raw = await fs.readFile(filePath, "utf8");
     return JSON.parse(raw) as T;
   } catch (err: unknown) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return null;
     // Corrupt file: keep the system alive instead of crashing.
     return null;
   }
@@ -83,13 +92,16 @@ export async function fileExists(filePath: string): Promise<boolean> {
  * appends from multiple processes do not interleave mid-line for
  * reasonably-sized records.
  */
-export async function appendJsonLine(filePath: string, value: unknown): Promise<void> {
+export async function appendJsonLine(
+  filePath: string,
+  value: unknown,
+): Promise<void> {
   const dir = path.dirname(filePath);
   await fs.mkdir(dir, { recursive: true });
   const line = `${JSON.stringify(value)}\n`;
-  const handle = await fs.open(filePath, 'a');
+  const handle = await fs.open(filePath, "a");
   try {
-    await handle.writeFile(line, 'utf8');
+    await handle.writeFile(line, "utf8");
     await handle.sync();
   } finally {
     await handle.close();
@@ -104,13 +116,13 @@ export async function appendJsonLine(filePath: string, value: unknown): Promise<
 export async function readJsonl<T>(filePath: string): Promise<T[]> {
   let raw: string;
   try {
-    raw = await fs.readFile(filePath, 'utf8');
+    raw = await fs.readFile(filePath, "utf8");
   } catch (err: unknown) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return [];
     throw err;
   }
   const out: T[] = [];
-  for (const line of raw.split('\n')) {
+  for (const line of raw.split("\n")) {
     const trimmed = line.trim();
     if (!trimmed) continue;
     try {
@@ -145,12 +157,12 @@ export async function acquireLock(
   const dir = path.dirname(lockPath);
   await fs.mkdir(dir, { recursive: true });
   const started = Date.now();
-  const token = `${process.pid}.${crypto.randomBytes(4).toString('hex')}`;
+  const token = `${process.pid}.${crypto.randomBytes(4).toString("hex")}`;
 
   for (;;) {
     try {
-      const handle = await fs.open(lockPath, 'wx');
-      await handle.writeFile(token, 'utf8');
+      const handle = await fs.open(lockPath, "wx");
+      await handle.writeFile(token, "utf8");
       await handle.close();
       let released = false;
       return {
@@ -158,7 +170,7 @@ export async function acquireLock(
           if (released) return;
           released = true;
           try {
-            const current = await fs.readFile(lockPath, 'utf8');
+            const current = await fs.readFile(lockPath, "utf8");
             if (current.trim() === token) {
               await fs.rm(lockPath, { force: true });
             }
@@ -168,7 +180,7 @@ export async function acquireLock(
         },
       };
     } catch (err: unknown) {
-      if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
+      if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
       // Lock exists — check staleness.
       try {
         const stat = await fs.stat(lockPath);

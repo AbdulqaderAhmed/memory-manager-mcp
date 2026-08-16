@@ -1,15 +1,21 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { useTempMemoryHome, rmDir, initPlainWorkspace, initGitRepo, git } from './helpers.js';
-import { MemoryService } from '../src/service.js';
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import {
+  useTempMemoryHome,
+  rmDir,
+  initPlainWorkspace,
+  initGitRepo,
+  git,
+} from "./helpers.js";
+import { MemoryService } from "../src/service.js";
 
-describe('sessions and handoffs', () => {
+describe("sessions and handoffs", () => {
   let home: string;
   let service: MemoryService;
   let workspace: string;
   let cleanupWs: () => Promise<void>;
 
   beforeAll(async () => {
-    home = await useTempMemoryHome('memhome-handoff');
+    home = await useTempMemoryHome("memhome-handoff");
     service = new MemoryService();
     const ws = await initPlainWorkspace();
     workspace = ws.dir;
@@ -21,56 +27,60 @@ describe('sessions and handoffs', () => {
     await rmDir(home);
   });
 
-  it('starts and finishes sessions', async () => {
+  it("starts and finishes sessions", async () => {
     const { project } = await service.detectAndRegister(workspace);
     const session = await service.sessionManager.startSession({
       projectId: project.id,
-      agentId: 'vscode',
-      agentName: 'VS Code',
+      agentId: "vscode",
+      agentName: "VS Code",
     });
-    expect(session.status).toBe('active');
-    expect((await service.sessionManager.getActiveSessions(project.id)).length).toBe(1);
+    expect(session.status).toBe("active");
+    expect(
+      (await service.sessionManager.getActiveSessions(project.id)).length,
+    ).toBe(1);
 
     const finished = await service.sessionManager.finishSession({
       projectId: project.id,
       sessionId: session.sessionId,
-      status: 'completed',
-      summary: 'Implemented leave API',
+      status: "completed",
+      summary: "Implemented leave API",
     });
-    expect(finished.status).toBe('completed');
+    expect(finished.status).toBe("completed");
     expect(finished.endedAt).toBeTruthy();
-    expect(finished.summary).toBe('Implemented leave API');
-    expect((await service.sessionManager.getActiveSessions(project.id)).length).toBe(0);
+    expect(finished.summary).toBe("Implemented leave API");
+    expect(
+      (await service.sessionManager.getActiveSessions(project.id)).length,
+    ).toBe(0);
   });
 
-  it('creates handoffs with latest + history', async () => {
+  it("creates handoffs with latest + history", async () => {
     const { project } = await service.detectAndRegister(workspace);
 
     const first = await service.handoffManager.createHandoff({
       projectId: project.id,
-      agentId: 'vscode',
-      task: 'Employee Leave Management',
-      completed: ['Leave API implemented'],
-      remaining: ['Finish approval UI', 'Add tests'],
-      problems: ['Approval modal does not refresh correctly'],
-      changedFiles: ['app/leave/page.tsx'],
-      nextAction: 'Fix approval modal state refresh',
+      agentId: "vscode",
+      task: "Employee Leave Management",
+      completed: ["Leave API implemented"],
+      remaining: ["Finish approval UI", "Add tests"],
+      problems: ["Approval modal does not refresh correctly"],
+      changedFiles: ["app/leave/page.tsx"],
+      nextAction: "Fix approval modal state refresh",
     });
     await new Promise((r) => setTimeout(r, 10));
     const second = await service.handoffManager.createHandoff({
       projectId: project.id,
-      agentId: 'cursor',
-      task: 'Employee Leave Management',
-      completed: ['Approval UI finished'],
-      remaining: ['Add tests'],
+      agentId: "cursor",
+      task: "Employee Leave Management",
+      completed: ["Approval UI finished"],
+      remaining: ["Add tests"],
       problems: [],
-      changedFiles: ['app/leave/page.tsx'],
-      nextAction: 'Add integration tests',
+      changedFiles: ["app/leave/page.tsx"],
+      nextAction: "Add integration tests",
     });
 
     const latest = await service.handoffManager.getLatestHandoff(project.id);
     expect(latest?.id).toBe(second.id);
-    expect(latest?.agentId).toBe('cursor');
+    expect(latest?.agentId).toBe("cursor");
 
     const history = await service.handoffManager.getHistory(project.id);
     expect(history.length).toBe(2);
@@ -78,35 +88,35 @@ describe('sessions and handoffs', () => {
     expect(history[1].id).toBe(first.id);
   });
 
-  it('rejects handoffs without task or nextAction', async () => {
+  it("rejects handoffs without task or nextAction", async () => {
     const { project } = await service.detectAndRegister(workspace);
     await expect(
       service.handoffManager.createHandoff({
         projectId: project.id,
-        agentId: 'x',
-        task: '',
-        nextAction: 'do something',
+        agentId: "x",
+        task: "",
+        nextAction: "do something",
       }),
     ).rejects.toThrow();
     await expect(
       service.handoffManager.createHandoff({
         projectId: project.id,
-        agentId: 'x',
-        task: 'task',
-        nextAction: '',
+        agentId: "x",
+        task: "task",
+        nextAction: "",
       }),
     ).rejects.toThrow();
   });
 });
 
-describe('context builder', () => {
+describe("context builder", () => {
   let home: string;
   let service: MemoryService;
   let workspace: string;
   let cleanupWs: () => Promise<void>;
 
   beforeAll(async () => {
-    home = await useTempMemoryHome('memhome-context');
+    home = await useTempMemoryHome("memhome-context");
     service = new MemoryService();
     const ws = await initPlainWorkspace();
     workspace = ws.dir;
@@ -118,64 +128,66 @@ describe('context builder', () => {
     await rmDir(home);
   });
 
-  it('builds a briefing with task, handoff, decisions and problems in priority order', async () => {
+  it("builds a briefing with task, handoff, decisions and problems in priority order", async () => {
     const { project } = await service.detectAndRegister(workspace);
 
     await service.memoryManager.updateContext({
       projectId: project.id,
-      technology: ['Next.js', 'TypeScript'],
-      lastAgent: 'vscode',
+      technology: ["Next.js", "TypeScript"],
+      lastAgent: "vscode",
     });
     await service.memoryManager.createTask({
       projectId: project.id,
-      title: 'Employee Leave Management',
-      status: 'in_progress',
+      title: "Employee Leave Management",
+      status: "in_progress",
     });
     await service.memoryManager.recordDecision({
       projectId: project.id,
-      content: 'Leave approval requires manager role.',
+      content: "Leave approval requires manager role.",
       importance: 0.9,
     });
     await service.memoryManager.saveMemory({
       projectId: project.id,
-      type: 'problem',
-      content: 'Approval modal does not refresh after approval.',
+      type: "problem",
+      content: "Approval modal does not refresh after approval.",
       importance: 0.8,
     });
     await service.handoffManager.createHandoff({
       projectId: project.id,
-      agentId: 'vscode',
-      task: 'Employee Leave Management',
-      completed: ['Leave API', 'Leave approval endpoint'],
-      remaining: ['Approval UI', 'Tests'],
+      agentId: "vscode",
+      task: "Employee Leave Management",
+      completed: ["Leave API", "Leave approval endpoint"],
+      remaining: ["Approval UI", "Tests"],
       problems: [],
       changedFiles: [],
-      nextAction: 'Build approval UI',
+      nextAction: "Build approval UI",
     });
 
-    const built = await service.contextBuilder.build(project, { workspacePath: workspace });
+    const built = await service.contextBuilder.build(project, {
+      workspacePath: workspace,
+    });
     const b = built.briefing;
 
-    expect(b).toContain('PROJECT:');
-    expect(b).toContain('Employee Leave Management');
-    expect(b).toContain('Leave approval requires manager role.');
-    expect(b).toContain('Approval modal does not refresh after approval.');
-    expect(b).toContain('Recommended next action: Build approval UI');
+    expect(b).toContain("PROJECT:");
+    expect(b).toContain("Employee Leave Management");
+    expect(b).toContain("Leave approval requires manager role.");
+    expect(b).toContain("Approval modal does not refresh after approval.");
+    expect(b).toContain("Recommended next action: Build approval UI");
 
     // Priority ordering: task before handoff, handoff before decisions.
-    const taskIdx = b.indexOf('Current task:');
-    const handoffIdx = b.indexOf('Latest handoff');
-    const decisionIdx = b.indexOf('Important decisions:');
+    const taskIdx = b.indexOf("Current task:");
+    const handoffIdx = b.indexOf("Latest handoff");
+    const decisionIdx = b.indexOf("Important decisions:");
     expect(taskIdx).toBeLessThan(handoffIdx);
     expect(handoffIdx).toBeLessThan(decisionIdx);
   });
 
-  it('respects the context budget', async () => {
+  it("respects the context budget", async () => {
     const { project } = await service.detectAndRegister(workspace);
     for (let i = 0; i < 30; i += 1) {
       await service.memoryManager.saveMemory({
         projectId: project.id,
-        type: 'fact',
+        type: "fact",
         content: `Fact number ${i} with some padding text to make it longer.`,
         importance: 0.5,
       });
@@ -187,36 +199,48 @@ describe('context builder', () => {
     expect(built.briefing.length).toBeLessThanOrEqual(1500);
   });
 
-  it('detects unfinished work from open task + active session', async () => {
+  it("detects unfinished work from open task + active session", async () => {
     const { project } = await service.detectAndRegister(workspace);
     await service.memoryManager.createTask({
       projectId: project.id,
-      title: 'Payroll module',
-      status: 'in_progress',
+      title: "Payroll module",
+      status: "in_progress",
     });
     await service.sessionManager.startSession({
       projectId: project.id,
-      agentId: 'claude-cli',
+      agentId: "claude-cli",
     });
 
-    const built = await service.contextBuilder.build(project, { workspacePath: workspace });
+    const built = await service.contextBuilder.build(project, {
+      workspacePath: workspace,
+    });
     expect(built.unfinishedWork).not.toBeNull();
-    expect(built.unfinishedWork?.activeTask?.title).toBe('Payroll module');
-    expect(built.briefing).toContain('Unfinished work detected.');
+    expect(built.unfinishedWork?.activeTask?.title).toBe("Payroll module");
+    expect(built.briefing).toContain("Unfinished work detected.");
   });
 
-  it('detects uncommitted changes as unfinished work', async () => {
-    const repo = await initGitRepo({ remoteUrl: 'https://github.com/company/Dirty.git' });
+  it("detects uncommitted changes as unfinished work", async () => {
+    const repo = await initGitRepo({
+      remoteUrl: "https://github.com/company/Dirty.git",
+    });
     try {
       const { project } = await service.detectAndRegister(repo.dir);
       // Create an uncommitted change.
-      const fs = await import('node:fs/promises');
-      const path = await import('node:path');
-      await fs.writeFile(path.join(repo.dir, 'dirty.txt'), 'uncommitted', 'utf8');
+      const fs = await import("node:fs/promises");
+      const path = await import("node:path");
+      await fs.writeFile(
+        path.join(repo.dir, "dirty.txt"),
+        "uncommitted",
+        "utf8",
+      );
 
-      const built = await service.contextBuilder.build(project, { workspacePath: repo.dir });
-      expect(built.unfinishedWork?.uncommittedChanges?.length).toBeGreaterThan(0);
-      expect(built.briefing).toContain('Uncommitted changes:');
+      const built = await service.contextBuilder.build(project, {
+        workspacePath: repo.dir,
+      });
+      expect(built.unfinishedWork?.uncommittedChanges?.length).toBeGreaterThan(
+        0,
+      );
+      expect(built.briefing).toContain("Uncommitted changes:");
     } finally {
       await repo.cleanup();
     }
