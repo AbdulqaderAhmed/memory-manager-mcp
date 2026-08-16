@@ -10,6 +10,7 @@ import {
   supportedClientIds,
   defaultServerEntry,
   SERVER_KEY,
+  LEGACY_SERVER_KEY,
   type JsonClientSpec,
 } from "../src/clients/index.js";
 import { registerCodexMcp, unregisterCodexMcp } from "../src/clients/codex.js";
@@ -166,6 +167,46 @@ describe("client registries", () => {
       /Unknown client/,
     );
   });
+
+  it("migrates entries left under the legacy key", async () => {
+    const s = spec("legacy");
+    await fs.mkdir(path.dirname(s.configFiles[0]), { recursive: true });
+    await fs.writeFile(
+      s.configFiles[0],
+      JSON.stringify({
+        mcpServers: {
+          [LEGACY_SERVER_KEY]: { command: "node", args: ["/old/path.js"] },
+        },
+      }),
+      "utf8",
+    );
+
+    const result = await registerJsonClient(s);
+    expect(result.status).toBe("configured");
+
+    const doc = JSON.parse(await fs.readFile(s.configFiles[0], "utf8"));
+    expect(doc.mcpServers[LEGACY_SERVER_KEY]).toBeUndefined();
+    expect(doc.mcpServers[SERVER_KEY]).toEqual(defaultServerEntry());
+  });
+
+  it("unregister also removes legacy-key entries", async () => {
+    const s = spec("legacy-unreg");
+    await fs.mkdir(path.dirname(s.configFiles[0]), { recursive: true });
+    await fs.writeFile(
+      s.configFiles[0],
+      JSON.stringify({
+        mcpServers: {
+          [LEGACY_SERVER_KEY]: { command: "node", args: ["/old/path.js"] },
+        },
+      }),
+      "utf8",
+    );
+
+    const result = await unregisterJsonClient(s);
+    expect(result.detail).toBe("entry removed");
+    const doc = JSON.parse(await fs.readFile(s.configFiles[0], "utf8"));
+    expect(doc.mcpServers[LEGACY_SERVER_KEY]).toBeUndefined();
+  });
 });
 
 describe("codex registry (TOML)", () => {
@@ -185,7 +226,7 @@ describe("codex registry (TOML)", () => {
     expect(result.status).toBe("configured");
 
     const content = await fs.readFile(configPath, "utf8");
-    expect(content).toContain("[mcp_servers.memory]");
+    expect(content).toContain(`[mcp_servers.${SERVER_KEY}]`);
     expect(content).toContain('command = "');
     expect(content).toContain("args = [");
   });
@@ -206,7 +247,26 @@ describe("codex registry (TOML)", () => {
 
     const content = await fs.readFile(configPath, "utf8");
     expect(content).toContain("[mcp_servers.other]");
-    expect(content.match(/\[mcp_servers\.memory\]/g)).toHaveLength(1);
+    expect(
+      content.match(new RegExp(`\\[mcp_servers\\.${SERVER_KEY}\\]`, "g")),
+    ).toHaveLength(1);
+  });
+
+  it("migrates a legacy TOML section to the new key", async () => {
+    const configPath = path.join(tmp, "legacy", "config.toml");
+    await fs.mkdir(path.dirname(configPath), { recursive: true });
+    await fs.writeFile(
+      configPath,
+      `[mcp_servers.${LEGACY_SERVER_KEY}]\ncommand = "node"\nargs = ["/old/path.js"]\n`,
+      "utf8",
+    );
+
+    const result = await registerCodexMcp({ customConfigPath: configPath });
+    expect(result.status).toBe("configured");
+
+    const content = await fs.readFile(configPath, "utf8");
+    expect(content).not.toContain(`[mcp_servers.${LEGACY_SERVER_KEY}]`);
+    expect(content).toContain(`[mcp_servers.${SERVER_KEY}]`);
   });
 
   it("unregister removes the TOML section only", async () => {
@@ -216,6 +276,6 @@ describe("codex registry (TOML)", () => {
     expect(result.detail).toBe("entry removed");
 
     const content = await fs.readFile(configPath, "utf8");
-    expect(content).not.toContain("[mcp_servers.memory]");
+    expect(content).not.toContain(`[mcp_servers.${SERVER_KEY}]`);
   });
 });

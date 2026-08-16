@@ -15,6 +15,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import {
   SERVER_KEY,
+  LEGACY_SERVER_KEY,
   SERVER_ENTRY,
   homeDir,
   pathExists,
@@ -47,34 +48,48 @@ function generateMemoryToml(entry: ServerEntry): string {
 
 const SECTION_HEADER = `[mcp_servers.${SERVER_KEY}]`;
 
+/** All registration keys to look for (current + legacy, for migration). */
+const ALL_KEYS =
+  SERVER_KEY === LEGACY_SERVER_KEY
+    ? [SERVER_KEY]
+    : [SERVER_KEY, LEGACY_SERVER_KEY];
+
+function hasKeyEntry(tomlContent: string, key: string): boolean {
+  return new RegExp(`^\\[mcp_servers\\.${key}\\]`, "m").test(tomlContent);
+}
+
 function hasMemoryEntry(tomlContent: string): boolean {
-  return new RegExp(`^\\[mcp_servers\\.${SERVER_KEY}\\]`, "m").test(
-    tomlContent,
-  );
+  return ALL_KEYS.some((key) => hasKeyEntry(tomlContent, key));
 }
 
-/** Extract the first arg of an existing memory TOML block, or null. */
+/** Extract the first arg of an existing entry under any known key, or null. */
 function extractExistingArgs(tomlContent: string): string | null {
-  const match = tomlContent.match(
-    new RegExp(
-      `\\[mcp_servers\\.${SERVER_KEY}\\][^[]*?args\\s*=\\s*\\["([^"]+)"\\]`,
-      "s",
-    ),
-  );
-  return match ? match[1].replace(/\\\\/g, "\\") : null;
+  for (const key of ALL_KEYS) {
+    const match = tomlContent.match(
+      new RegExp(
+        `\\[mcp_servers\\.${key}\\][^[]*?args\\s*=\\s*\\["([^"]+)"\\]`,
+        "s",
+      ),
+    );
+    if (match) return match[1].replace(/\\\\/g, "\\");
+  }
+  return null;
 }
 
-/** Remove the [mcp_servers.memory] section from TOML content. */
+/** Remove the [mcp_servers.<key>] section(s) for all known keys. */
 function removeMemorySection(tomlContent: string): string {
-  const pattern = new RegExp(
-    `\\n?\\[mcp_servers\\.${SERVER_KEY}\\]\\n(?:(?!\\n\\[)[^\\n]*\\n?)*`,
-    "g",
-  );
-  let result = tomlContent.replace(pattern, "");
-  const startPattern = new RegExp(
-    `^\\[mcp_servers\\.${SERVER_KEY}\\]\\n(?:(?!\\n\\[)[^\\n]*\\n?)*`,
-  );
-  result = result.replace(startPattern, "");
+  let result = tomlContent;
+  for (const key of ALL_KEYS) {
+    const pattern = new RegExp(
+      `\\n?\\[mcp_servers\\.${key}\\]\\n(?:(?!\\n\\[)[^\\n]*\\n?)*`,
+      "g",
+    );
+    result = result.replace(pattern, "");
+    const startPattern = new RegExp(
+      `^\\[mcp_servers\\.${key}\\]\\n(?:(?!\\n\\[)[^\\n]*\\n?)*`,
+    );
+    result = result.replace(startPattern, "");
+  }
   return result.replace(/\n{3,}/g, "\n\n").trim();
 }
 
@@ -113,7 +128,8 @@ export async function registerCodexMcp(
     }
 
     const upToDate =
-      hasMemoryEntry(existingContent) &&
+      hasKeyEntry(existingContent, SERVER_KEY) &&
+      !hasKeyEntry(existingContent, LEGACY_SERVER_KEY) &&
       extractExistingArgs(existingContent) === entry.args[0];
 
     if (upToDate) {

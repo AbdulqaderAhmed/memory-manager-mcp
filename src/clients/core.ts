@@ -23,7 +23,14 @@ import { atomicWriteFile, readJsonOrNull } from "../storage/fsutil.js";
 export const atomicWriteFileSafe = atomicWriteFile;
 
 /** Name under which the server is registered in each client config. */
-export const SERVER_KEY = "memory";
+export const SERVER_KEY: string = "manager-mcp";
+
+/**
+ * Registration key used by versions <= 0.2.0. Entries left under this key are
+ * migrated (removed) automatically the next time setup runs, so no duplicate
+ * or orphaned server entries remain in client configs.
+ */
+export const LEGACY_SERVER_KEY: string = "memory";
 
 /** Absolute path of the compiled MCP server entry point (dist/index.js). */
 export const SERVER_ENTRY = fileURLToPath(
@@ -159,8 +166,15 @@ async function mergeIntoJsonFile(
       : {};
 
   const existing = root[SERVER_KEY];
-  if (existing && entriesEqual(existing, entry)) {
+  const hasLegacy =
+    SERVER_KEY !== LEGACY_SERVER_KEY && LEGACY_SERVER_KEY in root;
+  if (existing && !hasLegacy && entriesEqual(existing, entry)) {
     return "already-configured";
+  }
+
+  // Migrate: drop entries left behind under the old registration key.
+  if (hasLegacy) {
+    delete root[LEGACY_SERVER_KEY];
   }
 
   root[SERVER_KEY] = { ...entry, ...entryExtras };
@@ -243,15 +257,19 @@ export async function unregisterJsonClient(
       const doc = await readJsonOrNull<Record<string, unknown>>(configFile);
       if (!doc) continue;
       const root = doc[spec.rootKey];
-      if (
-        root &&
-        typeof root === "object" &&
-        SERVER_KEY in (root as Record<string, unknown>)
-      ) {
-        delete (root as Record<string, unknown>)[SERVER_KEY];
-        await fs.copyFile(configFile, `${configFile}.bak`);
-        await atomicWriteFile(configFile, `${JSON.stringify(doc, null, 2)}\n`);
-        anyRemoved = true;
+      if (root && typeof root === "object") {
+        const r = root as Record<string, unknown>;
+        const hadEntry = SERVER_KEY in r || LEGACY_SERVER_KEY in r;
+        if (hadEntry) {
+          delete r[SERVER_KEY];
+          delete r[LEGACY_SERVER_KEY];
+          await fs.copyFile(configFile, `${configFile}.bak`);
+          await atomicWriteFile(
+            configFile,
+            `${JSON.stringify(doc, null, 2)}\n`,
+          );
+          anyRemoved = true;
+        }
       }
     } catch {
       // Missing/unreadable file — nothing to remove.
@@ -274,12 +292,11 @@ export async function isJsonRegistered(
   for (const configFile of configFiles) {
     const doc = await readJsonOrNull<Record<string, unknown>>(configFile);
     const root = doc?.[rootKey];
-    if (
-      root &&
-      typeof root === "object" &&
-      SERVER_KEY in (root as Record<string, unknown>)
-    ) {
-      return true;
+    if (root && typeof root === "object") {
+      const r = root as Record<string, unknown>;
+      if (SERVER_KEY in r || LEGACY_SERVER_KEY in r) {
+        return true;
+      }
     }
   }
   return false;

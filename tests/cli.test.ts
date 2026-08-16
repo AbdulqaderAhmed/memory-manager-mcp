@@ -149,6 +149,35 @@ describe("CLI", () => {
     expect(result.stdout).toContain("completed");
   });
 
+  it("--help and help <command> print usage", async () => {
+    const overview = await runCli(["--help"], workspace, {
+      AGENT_MEMORY_HOME: home,
+    });
+    expect(overview.code).toBe(0);
+    expect(overview.stdout).toContain("memory-manage-mcp — local-first memory");
+    expect(overview.stdout).toContain("doctor");
+    expect(overview.stdout).toContain("setup");
+
+    const shortFlag = await runCli(["-h"], workspace, {
+      AGENT_MEMORY_HOME: home,
+    });
+    expect(shortFlag.code).toBe(0);
+    expect(shortFlag.stdout).toContain("Usage:");
+
+    const setupHelp = await runCli(["help", "setup"], workspace, {
+      AGENT_MEMORY_HOME: home,
+    });
+    expect(setupHelp.code).toBe(0);
+    expect(setupHelp.stdout).toContain("--client <id>");
+    expect(setupHelp.stdout).toContain("--dry-run");
+
+    const doctorHelp = await runCli(["doctor", "--help"], workspace, {
+      AGENT_MEMORY_HOME: home,
+    });
+    expect(doctorHelp.code).toBe(0);
+    expect(doctorHelp.stdout).toContain("diagnostics");
+  });
+
   it("clear requires --all --yes", async () => {
     const refused = await runCli(["clear"], workspace, {
       AGENT_MEMORY_HOME: home,

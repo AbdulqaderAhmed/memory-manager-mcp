@@ -15,6 +15,7 @@ import {
 import { isGitAvailable } from "../git/gitService.js";
 import { detectProject } from "../project/detector.js";
 import { SERVER_VERSION } from "../version.js";
+import { registrationStatus, SERVER_KEY } from "../clients/index.js";
 
 export interface DoctorCheck {
   name: string;
@@ -131,6 +132,41 @@ async function checkGit(): Promise<DoctorCheck> {
   };
 }
 
+/**
+ * Verify the server is actually registered in at least one AI client config.
+ * This is how a user confirms the memory tools are reachable in their IDE.
+ */
+async function checkClientRegistration(): Promise<DoctorCheck> {
+  try {
+    const status = await registrationStatus();
+    const registered = Object.entries(status)
+      .filter(([, ok]) => ok)
+      .map(([id]) => id);
+    if (registered.length > 0) {
+      return {
+        name: "Client registration",
+        ok: true,
+        detail: `registered as "${SERVER_KEY}" in: ${registered.join(", ")}`,
+      };
+    }
+    // Not registered in any *user-level* config. The user may still have a
+    // manual workspace-level config (.vscode/mcp.json, .mcp.json, ...), so
+    // this is a hint rather than a hard failure.
+    return {
+      name: "Client registration",
+      ok: true,
+      detail:
+        'not found in any user-level client config — run "memory-manage-mcp setup" (or check your workspace MCP config)',
+    };
+  } catch (err) {
+    return {
+      name: "Client registration",
+      ok: false,
+      detail: String(err),
+    };
+  }
+}
+
 export async function runDoctor(options?: {
   root?: string;
   workspacePath?: string;
@@ -145,6 +181,7 @@ export async function runDoctor(options?: {
   checks.push(await checkStorageIntegrity(service));
   checks.push(await checkProjectDetection(options?.workspacePath));
   checks.push(await checkGit());
+  checks.push(await checkClientRegistration());
 
   const allOk = checks.every((c) => c.ok);
   return { checks, allOk };

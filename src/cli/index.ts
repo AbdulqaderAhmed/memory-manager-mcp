@@ -56,6 +56,9 @@ function parseArgs(argv: string[]): ParsedArgs {
       } else {
         flags.set(key, true);
       }
+    } else if (arg.startsWith("-") && arg.length > 1) {
+      // Short flags, e.g. -h.
+      flags.set(arg.slice(1), true);
     } else {
       positional.push(arg);
     }
@@ -86,8 +89,20 @@ async function main(): Promise<void> {
     typeof args.flags.get("workspace") === "string"
       ? (args.flags.get("workspace") as string)
       : undefined;
-  const service = new MemoryService();
   const [cmd, sub] = args.command;
+
+  // --help / -h / help — show help for a specific command, or the overview.
+  const wantsHelp =
+    args.flags.get("help") === true ||
+    args.flags.get("h") === true ||
+    cmd === "help";
+  if (wantsHelp) {
+    const topic = cmd === "help" ? (sub ?? args.positional[0]) : cmd;
+    console.log(commandHelp(topic));
+    return;
+  }
+
+  const service = new MemoryService();
 
   switch (cmd) {
     case "projects": {
@@ -324,7 +339,108 @@ Usage:
 Options:
   --workspace <dir>   Operate on a specific workspace (default: cwd)
   --json              Machine-readable JSON output
+  -h, --help          Show help (also: memory-manage-mcp help <command>)
 `;
+
+const COMMAND_HELP: Record<string, string> = {
+  projects: `memory-manage-mcp projects [--json]
+
+List every project the memory server knows about, with its stable project id,
+identity source (git remote / .agent-memory.json / path), canonical identity
+string and all local paths that map to it.
+
+Options:
+  --json   Machine-readable JSON output`,
+
+  project: `memory-manage-mcp project <subcommand>
+
+Subcommands:
+  current            Detect which project the current (or --workspace) directory
+                     resolves to: identity kind, canonical string, project id,
+                     registration state and git info.
+  inspect [id]       Show a summary of a project's stored memory: context,
+                     task/decision/memory/session counts and the latest handoff.
+                     Without [id], inspects the project of the current directory.
+
+Options:
+  --workspace <dir>  Operate on a specific workspace (default: cwd)
+  --json             Machine-readable JSON output
+
+Examples:
+  memory-manage-mcp project current
+  memory-manage-mcp project inspect proj_abc123 --json`,
+
+  memory: `memory-manage-mcp memory search <query> [--workspace <dir>] [--json]
+
+Ranked keyword search across the current project's memories, tasks,
+decisions, handoffs, session summaries and context. Each result shows its
+score, source and a snippet.
+
+Example:
+  memory-manage-mcp memory search "employee permission"`,
+
+  handoff: `memory-manage-mcp handoff latest [--workspace <dir>] [--json]
+
+Print the most recent handoff for the project of the current directory:
+what was completed, what remains, known problems, changed files and the
+recommended next action.`,
+
+  sessions: `memory-manage-mcp sessions [--workspace <dir>] [--json]
+
+List all agent working sessions recorded for the project of the current
+directory, with agent id, status, start/end times and summaries.`,
+
+  doctor: `memory-manage-mcp doctor [--json]
+
+Run installation diagnostics: Node.js version, storage directory and file
+permissions, config file, storage integrity, project detection for the
+current workspace, git availability, and which AI clients the server is
+registered in. Exits non-zero if any check fails.
+
+This is the first thing to run when something seems off, and the way to
+confirm the server is functioning (see the "Client registration" check).`,
+
+  setup: `memory-manage-mcp setup [--client <id>] [--force] [--dry-run] [--json]
+
+Detect every supported AI client installed on this machine and register the
+memory server (as "manager-mcp") in each client's MCP config. Only installed
+clients are touched; existing configs are backed up (.bak) and written
+atomically. Entries left under the old "memory" key are migrated automatically.
+
+Supported client ids: vscode, cursor, claude-desktop, claude-code,
+antigravity, gemini-cli, windsurf, codex
+
+Options:
+  --client <id>   Configure a single client only
+  --force         Configure even if the client is not detected as installed
+  --dry-run       Show what would change without writing anything
+  --json          Machine-readable JSON report
+
+Examples:
+  memory-manage-mcp setup
+  memory-manage-mcp setup --dry-run
+  memory-manage-mcp setup --client cursor --force`,
+
+  uninstall: `memory-manage-mcp uninstall [--client <id>] [--json]
+
+Remove the memory server entry (both "manager-mcp" and the legacy "memory"
+key) from all client configs, or from a single client with --client <id>.
+Config files are backed up (.bak) before modification. Your stored memory
+under ~/.agent-memory/ is NOT deleted — use "clear" for that.`,
+
+  clear: `memory-manage-mcp clear --all --yes
+
+Permanently delete ALL stored memory for ALL projects under ~/.agent-memory/.
+Both --all and --yes are required as a safety guard. This cannot be undone.`,
+};
+
+function commandHelp(topic: string | undefined): string {
+  if (!topic) return USAGE;
+  const help = COMMAND_HELP[topic];
+  if (help)
+    return `${help}\n\nGlobal options:\n  --workspace <dir>   Operate on a specific workspace (default: cwd)\n  --json              Machine-readable JSON output\n  -h, --help          Show help`;
+  return `Unknown command: ${topic}\n\n${USAGE}`;
+}
 
 main().catch((err) => {
   console.error("memory-manage-mcp CLI error:", err);

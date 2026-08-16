@@ -60,11 +60,11 @@ Supported clients (one dedicated registry per client):
 | **Antigravity**       | `~/.gemini/config/mcp_config.json` **and** `~/.gemini/antigravity-ide/mcp.json`                                                          |
 | **Gemini CLI**        | `~/.gemini/settings.json`                                                                                                                |
 | **Windsurf**          | `~/.codeium/windsurf/mcp_config.json`                                                                                                    |
-| **Codex CLI**         | `~/.codex/config.toml` (TOML `[mcp_servers.memory]` table)                                                                               |
+| **Codex CLI**         | `~/.codex/config.toml` (TOML `[mcp_servers.manager-mcp]` table)                                                                          |
 
 - Only clients that are actually installed are touched; others are skipped.
 - Existing config files are preserved (a `.bak` backup is created first) and written atomically — other MCP servers you configured stay intact.
-- The server is registered under the name `memory`.
+- The server is registered under the name **`manager-mcp`** — that is the prefix you will see on its tools in your IDE (e.g. `manager-mcp_save_memory`). Entries left under the old `memory` key by earlier versions are migrated automatically on the next `setup`.
 - **Self-registering:** the MCP server also registers itself silently the first time it starts, so even a bare `node dist/index.js` launch ends up configured everywhere. Disable with `AGENT_MEMORY_NO_AUTO_SETUP=1`.
 
 Useful flags:
@@ -80,6 +80,17 @@ memory-manage-mcp uninstall --client vscode
 
 After setup, restart your IDE/client and the 15 memory tools are available. Prefer manual configuration? See the next section.
 
+### How do I know it is working?
+
+1. **`memory-manage-mcp doctor`** — the `Client registration` check lists every client where the server is registered as `manager-mcp`:
+
+   ```
+   ✓ Client registration   registered as "manager-mcp" in: vscode, cursor
+   ```
+
+2. **In your IDE** — after restarting, the MCP tool list should show the 15 tools prefixed with `manager-mcp_` (e.g. `manager-mcp_initialize_project_context`, `manager-mcp_save_memory`).
+3. **Ask your agent** — tell it to call `initialize_project_context`; a successful briefing response means the server is live and the project is registered.
+
 ## Connect your AI client manually
 
 The server speaks MCP over **stdio**. Point any MCP client at `node <path-to>/dist/index.js` (or `memory-manage-mcp` if installed globally).
@@ -91,7 +102,7 @@ Add to `.vscode/mcp.json` (workspace) or your user MCP settings:
 ```json
 {
   "servers": {
-    "memory": {
+    "manager-mcp": {
       "type": "stdio",
       "command": "node",
       "args": ["C:/path/to/memory-manager-mcp/dist/index.js"]
@@ -107,7 +118,7 @@ Add to `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (project):
 ```json
 {
   "mcpServers": {
-    "memory": {
+    "manager-mcp": {
       "command": "node",
       "args": ["C:/path/to/memory-manager-mcp/dist/index.js"]
     }
@@ -122,7 +133,7 @@ Add to `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (project):
 ```json
 {
   "mcpServers": {
-    "memory": {
+    "manager-mcp": {
       "command": "node",
       "args": ["C:/path/to/memory-manager-mcp/dist/index.js"]
     }
@@ -131,20 +142,20 @@ Add to `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (project):
 ```
 
 ```bash
-claude mcp add memory -- node C:/path/to/memory-manager-mcp/dist/index.js
+claude mcp add manager-mcp -- node C:/path/to/memory-manager-mcp/dist/index.js
 ```
 
 ### Gemini CLI
 
 ```bash
-gemini mcp add memory -- node C:/path/to/memory-manager-mcp/dist/index.js
+gemini mcp add manager-mcp -- node C:/path/to/memory-manager-mcp/dist/index.js
 ```
 
 ### Any other MCP client
 
 ```json
 {
-  "memory": {
+  "manager-mcp": {
     "command": "node",
     "args": ["/absolute/path/to/memory-manager-mcp/dist/index.js"]
   }
@@ -238,7 +249,7 @@ A machine-readable version of this guidance lives in [`docs/AGENT_GUIDE.md`](doc
 ## CLI
 
 ```bash
-node dist/cli/index.js <command> [--workspace <path>] [--json]
+memory-manage-mcp <command> [--workspace <path>] [--json]
 
   projects                  List known projects
   project current           Detect the project for the current directory
@@ -253,14 +264,25 @@ node dist/cli/index.js <command> [--workspace <path>] [--json]
   clear --all --yes         Permanently delete ALL memory
 ```
 
+Every command has built-in help — use `-h` / `--help` after the command, or `help <command>`:
+
+```bash
+memory-manage-mcp --help              # overview of all commands
+memory-manage-mcp help setup          # detailed help for one command
+memory-manage-mcp setup --help        # same thing
+memory-manage-mcp doctor -h           # short flag works too
+```
+
 Examples:
 
 ```bash
-node dist/cli/index.js doctor
-node dist/cli/index.js project current --workspace ./my-app
-node dist/cli/index.js memory search "employee permission"
-node dist/cli/index.js handoff latest --json
+memory-manage-mcp doctor
+memory-manage-mcp project current --workspace ./my-app
+memory-manage-mcp memory search "employee permission"
+memory-manage-mcp handoff latest --json
 ```
+
+> When developing from source, prefix commands with `node dist/cli/index.js` instead of `memory-manage-mcp`.
 
 ## Privacy
 
