@@ -1,0 +1,4 @@
+# pnpm workspace / build settings
+# esbuild (used by tsx/vitest) needs its postinstall script to build its binary.
+allowBuilds:
+  esbuild: true
