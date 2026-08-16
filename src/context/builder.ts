@@ -203,7 +203,18 @@ export function renderBriefing(input: RenderInput): string {
   }
   sections.push(headerLines.join("\n"));
 
-  // Unfinished work banner
+  // Agent protocol — always included so memory bookkeeping stays automatic
+  // and invisible to the user. Placed early so it survives budget trimming.
+  sections.push(
+    [
+      "AGENT PROTOCOL (automatic — the user never types memory commands):",
+      "- Silently save important decisions, requirements, problems, solutions and progress with save_memory while working.",
+      "- Before ending or pausing, silently call create_handoff (completed, remaining, problems, next action) and finish_session.",
+      "- Never ask the user to run or remember any memory tooling; all bookkeeping happens behind the scenes.",
+    ].join("\n"),
+  );
+
+  // Unfinished work banner + continue-or-start-fresh prompt
   const uw = input.unfinishedWork;
   if (uw) {
     const lines = ["Unfinished work detected."];
@@ -220,6 +231,22 @@ export function renderBriefing(input: RenderInput): string {
       lines.push(
         `Open session: ${uw.openSession.sessionId} (${uw.openSession.agentId})`,
       );
+    const stoppedAt =
+      uw.activeTask?.title ??
+      uw.lastHandoff?.nextAction ??
+      uw.lastHandoff?.task;
+    lines.push("");
+    lines.push("CONTINUE OR START FRESH?");
+    if (stoppedAt) lines.push(`You were stopped at: ${stoppedAt}`);
+    lines.push(
+      'Ask the user once, in plain words: "Would you like to continue where you left off? (yes/no)"',
+    );
+    lines.push(
+      "- If yes: resume from the recommended next action; do not redo completed work.",
+    );
+    lines.push(
+      "- If no: start fresh as the user directs, but keep recorded decisions in mind.",
+    );
     sections.push(lines.join("\n"));
   }
 

@@ -1,25 +1,33 @@
 # Agent Guide — memory-manage-mcp
 
-Instructions for AI coding agents using the `memory` MCP server.
+Instructions for AI coding agents using the `manager-mcp` MCP server.
 Copy the relevant section into your client's rules file (`.cursor/rules`, `CLAUDE.md`, `.github/copilot-instructions.md`, `GEMINI.md`, …) so every agent on the project follows the same protocol.
+
+> **Zero-touch principle:** the user never types memory commands, never has to
+> remember tool names, and never does bookkeeping. Everything below happens
+> automatically, behind the scenes. The only user interaction is one optional
+> question at session start: *continue where you left off? yes/no*.
 
 ---
 
 ## Short version (paste this)
 
 ```
-You have access to a persistent project memory via the "memory" MCP server.
+You have access to a persistent project memory via the "manager-mcp" MCP server.
+All memory bookkeeping is silent — never ask the user to run memory commands.
 
-1. FIRST ACTION in any session: call initialize_project_context with the
-   workspace path. Read the briefing and CONTINUE existing work — do not
-   restart completed work or contradict recorded decisions.
-2. While working: save distilled knowledge with save_memory (decisions,
-   requirements, architecture, problems, solutions, progress). Never save
-   raw conversation text. Record important choices with record_decision.
-   Track work items with update_task.
-3. BEFORE ending or pausing: call create_handoff with what was completed,
-   what remains, known problems, changed files and the recommended next
-   action. Then call finish_session with a short summary.
+1. FIRST ACTION in every chat, automatically: call initialize_project_context
+   with the workspace path. If the briefing reports unfinished work, ask the
+   user once: "Would you like to continue where you left off? (yes/no)".
+   - yes → resume from the recommended next action; never redo completed work.
+   - no  → start fresh as the user directs, keeping recorded decisions in mind.
+2. While working: silently save distilled knowledge with save_memory
+   (decisions, requirements, architecture, problems, solutions, progress).
+   Never save raw conversation text. Record important choices with
+   record_decision. Track work items with update_task.
+3. BEFORE ending or pausing, silently: call create_handoff with what was
+   completed, what remains, known problems, changed files and the recommended
+   next action. Then call finish_session with a short summary.
 ```
 
 ---
@@ -28,8 +36,9 @@ You have access to a persistent project memory via the "memory" MCP server.
 
 ### 1. Session start
 
-Always call **`initialize_project_context`** as your first tool call, passing the workspace path. The response contains:
+Always call **`initialize_project_context`** as your first tool call — automatically, without the user asking — passing the workspace path. The response contains:
 
+- **Agent protocol** — the silent-bookkeeping rules (also summarized above).
 - **Current task** — the open task the previous agent was working on.
 - **Latest handoff** — completed work, remaining work, known problems, changed files, and the **recommended next action**.
 - **Important decisions** — treat these as binding unless the user explicitly overrides them.
@@ -38,7 +47,8 @@ Always call **`initialize_project_context`** as your first tool call, passing th
 
 Rules:
 
-- If a handoff exists, **start from its `nextAction`** unless the user asks for something else.
+- If the briefing contains **"CONTINUE OR START FRESH?"**, ask the user once, in plain words, whether they want to continue where they left off. On **yes**, resume from the recommended next action; on **no**, start fresh as directed (but keep recorded decisions in mind).
+- If a handoff exists without an explicit unfinished-work banner, **start from its `nextAction`** unless the user asks for something else.
 - If the briefing says "no previous memory exists", you are the first agent — work normally and establish memory as you go.
 - Never redo work listed under "completed".
 

@@ -238,11 +238,13 @@ All writes are atomic (temp file → fsync → rename) or append-only with fsync
 | `delete_project_memory`      | Permanently delete one project's memory (`confirm: true`).                                                                                                                          |
 | `clear_memory`               | Permanently delete **all** memory (`confirm: true` + phrase `"delete everything"`).                                                                                                 |
 
-### Recommended agent workflow
+### Recommended agent workflow (zero-touch for the user)
 
-1. **On start** → `initialize_project_context`. Read the briefing; continue existing work instead of restarting it.
-2. **While working** → `save_memory` for distilled insights, `record_decision` for choices, `update_task` for progress.
-3. **Before stopping** → `create_handoff` + `finish_session`, so the next agent (possibly in another IDE) can continue seamlessly.
+The user never types memory commands — everything happens automatically behind the scenes:
+
+1. **On start** → the agent calls `initialize_project_context` by itself. If unfinished work is detected, it asks the user once: *"Would you like to continue where you left off? (yes/no)"* — **yes** resumes from the recommended next action, **no** starts fresh.
+2. **While working** → the agent silently saves decisions, requirements, problems and progress with `save_memory`, and tracks work with `update_task`.
+3. **Before stopping** → the agent silently calls `create_handoff` + `finish_session`, so the next chat (even in another IDE) can pick up seamlessly.
 
 A machine-readable version of this guidance lives in [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md) — you can reference it from your client's rules/instructions file.
 

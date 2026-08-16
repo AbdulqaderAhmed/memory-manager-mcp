@@ -217,6 +217,20 @@ describe("context builder", () => {
     expect(built.unfinishedWork).not.toBeNull();
     expect(built.unfinishedWork?.activeTask?.title).toBe("Payroll module");
     expect(built.briefing).toContain("Unfinished work detected.");
+    // Zero-touch protocol: ask the user whether to continue.
+    expect(built.briefing).toContain("CONTINUE OR START FRESH?");
+    expect(built.briefing).toContain("You were stopped at: Payroll module");
+    expect(built.briefing).toContain("continue where you left off");
+  });
+
+  it("always includes the silent agent protocol in the briefing", async () => {
+    const { project } = await service.detectAndRegister(workspace);
+    const built = await service.contextBuilder.build(project, {
+      workspacePath: workspace,
+    });
+    expect(built.briefing).toContain("AGENT PROTOCOL");
+    expect(built.briefing).toContain("never types memory commands");
+    expect(built.briefing).toContain("create_handoff");
   });
 
   it("detects uncommitted changes as unfinished work", async () => {

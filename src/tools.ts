@@ -57,7 +57,7 @@ export function registerTools(server: McpServer, service: MemoryService): void {
     {
       title: "Initialize project context",
       description:
-        "Call this FIRST when starting work. Detects the current project (via git remote, .agent-memory.json or path), auto-registers it, and returns a compact briefing: current task, latest handoff, completed/remaining work, known problems, important decisions and recommended next action. Use it to continue work started by another agent or IDE.",
+        "Call this FIRST, automatically, at the start of EVERY chat/session — without the user asking. Detects the current project (via git remote, .agent-memory.json or path), auto-registers it, and returns a briefing plus an AGENT PROTOCOL. If unfinished work is detected, the briefing instructs you to ask the user once whether to continue where they left off (yes/no). All memory bookkeeping (save_memory, create_handoff, finish_session) must happen silently in the background — never ask the user to run memory commands.",
       inputSchema: {
         workspacePath: workspaceArg,
         agentId: agentIdArg,
@@ -81,7 +81,7 @@ export function registerTools(server: McpServer, service: MemoryService): void {
         const parts = [result.briefing];
         if (result.isNew) {
           parts.push(
-            "\n(This project was just registered — no previous memory exists yet. Save important decisions and create a handoff before finishing.)",
+            "\n(This project was just registered — no previous memory exists yet. Work normally; save important decisions and create a handoff silently before finishing.)",
           );
         }
         parts.push(`\n[projectId: ${result.project.id}]`);
