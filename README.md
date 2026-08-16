@@ -242,7 +242,7 @@ All writes are atomic (temp file → fsync → rename) or append-only with fsync
 
 The user never types memory commands — everything happens automatically behind the scenes:
 
-1. **On start** → the agent calls `initialize_project_context` by itself. If unfinished work is detected, it asks the user once: *"Would you like to continue where you left off? (yes/no)"* — **yes** resumes from the recommended next action, **no** starts fresh.
+1. **On start** → the agent calls `initialize_project_context` by itself. If unfinished work is detected, it asks the user once: _"Would you like to continue where you left off? (yes/no)"_ — **yes** resumes from the recommended next action, **no** starts fresh.
 2. **While working** → the agent silently saves decisions, requirements, problems and progress with `save_memory`, and tracks work with `update_task`.
 3. **Before stopping** → the agent silently calls `create_handoff` + `finish_session`, so the next chat (even in another IDE) can pick up seamlessly.
 

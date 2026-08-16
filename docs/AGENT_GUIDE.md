@@ -6,7 +6,7 @@ Copy the relevant section into your client's rules file (`.cursor/rules`, `CLAUD
 > **Zero-touch principle:** the user never types memory commands, never has to
 > remember tool names, and never does bookkeeping. Everything below happens
 > automatically, behind the scenes. The only user interaction is one optional
-> question at session start: *continue where you left off? yes/no*.
+> question at session start: _continue where you left off? yes/no_.
 
 ---
 
