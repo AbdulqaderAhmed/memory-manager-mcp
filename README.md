@@ -220,24 +220,24 @@ All writes are atomic (temp file → fsync → rename) or append-only with fsync
 
 ## The MCP tools (16)
 
-| Tool                         | Purpose                                                                                                                                                                             |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tool                         | Purpose                                                                                                                                                                                                           |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `initialize_project_context` | **Call first.** Detects/registers the project and returns a compact briefing: current task, latest handoff, previous conversation digest, completed/remaining work, problems, decisions, recommended next action. |
-| `get_project_context`        | Lightweight fetch of the stored project context.                                                                                                                                    |
-| `save_memory`                | Save a curated memory (`decision`, `requirement`, `architecture`, `task`, `problem`, `solution`, `progress`, `fact`, `preference`, `constraint`, `discovery`). Pass `id` to update. |
-| `get_memory`                 | Retrieve one memory by id.                                                                                                                                                          |
-| `search_memory`              | Ranked keyword search across memories, tasks, decisions, handoffs, session summaries, conversation digests and context.                                                             |
-| `get_current_task`           | Most relevant open task + other open tasks.                                                                                                                                         |
-| `update_task`                | Create or update a task (`active`, `in_progress`, `completed`, `blocked`, `abandoned`).                                                                                             |
-| `record_decision`            | Record an important decision (long-lived in ranking).                                                                                                                               |
-| `get_decisions`              | List decisions, newest first.                                                                                                                                                       |
-| `create_handoff`             | **Call before stopping.** Structured handoff: completed, remaining, problems, changed files, next action.                                                                           |
-| `get_latest_handoff`         | Fetch the most recent handoff (optionally with history).                                                                                                                            |
-| `start_session`              | Begin tracking an agent working session.                                                                                                                                            |
-| `save_session_digest`        | **Call before stopping.** Compress the ENTIRE conversation into one detailed digest (max 4000 chars); injected into the next chat's briefing.                                       |
-| `finish_session`             | End a session with status + summary.                                                                                                                                                |
-| `delete_project_memory`      | Permanently delete one project's memory (`confirm: true`).                                                                                                                          |
-| `clear_memory`               | Permanently delete **all** memory (`confirm: true` + phrase `"delete everything"`).                                                                                                 |
+| `get_project_context`        | Lightweight fetch of the stored project context.                                                                                                                                                                  |
+| `save_memory`                | Save a curated memory (`decision`, `requirement`, `architecture`, `task`, `problem`, `solution`, `progress`, `fact`, `preference`, `constraint`, `discovery`). Pass `id` to update.                               |
+| `get_memory`                 | Retrieve one memory by id.                                                                                                                                                                                        |
+| `search_memory`              | Ranked keyword search across memories, tasks, decisions, handoffs, session summaries, conversation digests and context.                                                                                           |
+| `get_current_task`           | Most relevant open task + other open tasks.                                                                                                                                                                       |
+| `update_task`                | Create or update a task (`active`, `in_progress`, `completed`, `blocked`, `abandoned`).                                                                                                                           |
+| `record_decision`            | Record an important decision (long-lived in ranking).                                                                                                                                                             |
+| `get_decisions`              | List decisions, newest first.                                                                                                                                                                                     |
+| `create_handoff`             | **Call before stopping.** Structured handoff: completed, remaining, problems, changed files, next action.                                                                                                         |
+| `get_latest_handoff`         | Fetch the most recent handoff (optionally with history).                                                                                                                                                          |
+| `start_session`              | Begin tracking an agent working session.                                                                                                                                                                          |
+| `save_session_digest`        | **Call before stopping.** Compress the ENTIRE conversation into one detailed digest (max 4000 chars); injected into the next chat's briefing.                                                                     |
+| `finish_session`             | End a session with status + summary.                                                                                                                                                                              |
+| `delete_project_memory`      | Permanently delete one project's memory (`confirm: true`).                                                                                                                                                        |
+| `clear_memory`               | Permanently delete **all** memory (`confirm: true` + phrase `"delete everything"`).                                                                                                                               |
 
 ### Recommended agent workflow (zero-touch for the user)
 
