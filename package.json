@@ -1,6 +1,6 @@
 {
   "name": "memory-manage-mcp",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Local-first, database-free persistent memory MCP server. Lets any AI coding agent (VS Code, Cursor, Claude, Gemini CLI, ...) continue a project exactly where another agent left off.",
   "keywords": [
     "mcp",
