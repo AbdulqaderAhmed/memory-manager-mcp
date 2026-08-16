@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * memory-mcp CLI — management and debugging utilities.
+ * memory-manage-mcp CLI — management and debugging utilities.
  *
- *   memory-mcp projects                 list known projects
- *   memory-mcp project current          detect project for the current dir
- *   memory-mcp project inspect [id]     inspect a project's memory
- *   memory-mcp memory search <query>    search memories
- *   memory-mcp handoff latest           show latest handoff (current project)
- *   memory-mcp sessions                 list sessions (current project)
- *   memory-mcp doctor                   run diagnostics
- *   memory-mcp clear --all --yes        delete ALL memory (dangerous)
+ *   memory-manage-mcp projects                 list known projects
+ *   memory-manage-mcp project current          detect project for the current dir
+ *   memory-manage-mcp project inspect [id]     inspect a project's memory
+ *   memory-manage-mcp memory search <query>    search memories
+ *   memory-manage-mcp handoff latest           show latest handoff (current project)
+ *   memory-manage-mcp sessions                 list sessions (current project)
+ *   memory-manage-mcp doctor                   run diagnostics
+ *   memory-manage-mcp clear --all --yes        delete ALL memory (dangerous)
  *
  * Options:
  *   --workspace <dir>   workspace to operate on (default: cwd)
@@ -178,7 +178,7 @@ async function main(): Promise<void> {
       if (sub === "search") {
         const query = args.positional.join(" ");
         if (!query) {
-          console.error("Usage: memory-mcp memory search <query>");
+          console.error("Usage: memory-manage-mcp memory search <query>");
           process.exitCode = 1;
           return;
         }
@@ -255,7 +255,7 @@ async function main(): Promise<void> {
       const yes = args.flags.get("yes") === true;
       if (!all || !yes) {
         console.error("This deletes ALL memory for ALL projects.");
-        console.error("Run: memory-mcp clear --all --yes");
+        console.error("Run: memory-manage-mcp clear --all --yes");
         process.exitCode = 1;
         return;
       }
@@ -273,17 +273,17 @@ async function main(): Promise<void> {
   else process.exitCode = 1;
 }
 
-const USAGE = `memory-mcp — local-first memory for AI coding agents
+const USAGE = `memory-manage-mcp — local-first memory for AI coding agents
 
 Usage:
-  memory-mcp projects                     List known projects
-  memory-mcp project current              Detect project for the current directory
-  memory-mcp project inspect [id]         Inspect a project's stored memory
-  memory-mcp memory search <query>        Search memories of the current project
-  memory-mcp handoff latest               Show the latest handoff
-  memory-mcp sessions                     List sessions of the current project
-  memory-mcp doctor                       Run installation diagnostics
-  memory-mcp clear --all --yes            Delete ALL memory (dangerous)
+  memory-manage-mcp projects                     List known projects
+  memory-manage-mcp project current              Detect project for the current directory
+  memory-manage-mcp project inspect [id]         Inspect a project's stored memory
+  memory-manage-mcp memory search <query>        Search memories of the current project
+  memory-manage-mcp handoff latest               Show the latest handoff
+  memory-manage-mcp sessions                     List sessions of the current project
+  memory-manage-mcp doctor                       Run installation diagnostics
+  memory-manage-mcp clear --all --yes            Delete ALL memory (dangerous)
 
 Options:
   --workspace <dir>   Operate on a specific workspace (default: cwd)
@@ -291,6 +291,6 @@ Options:
 `;
 
 main().catch((err) => {
-  console.error("memory-mcp CLI error:", err);
+  console.error("memory-manage-mcp CLI error:", err);
   process.exit(1);
 });

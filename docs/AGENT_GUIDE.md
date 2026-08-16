@@ -1,4 +1,4 @@
-# Agent Guide — memory-mcp
+# Agent Guide — memory-manage-mcp
 
 Instructions for AI coding agents using the `memory` MCP server.
 Copy the relevant section into your client's rules file (`.cursor/rules`, `CLAUDE.md`, `.github/copilot-instructions.md`, `GEMINI.md`, …) so every agent on the project follows the same protocol.

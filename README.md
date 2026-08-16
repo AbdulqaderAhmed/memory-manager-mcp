@@ -1,8 +1,8 @@
-# memory-mcp
+# memory-manage-mcp
 
 > **Your project remembers, no matter which AI agent you use.**
 
-`memory-mcp` is a **local-first, database-free** persistent memory server for AI coding agents, exposed over the [Model Context Protocol](https://modelcontextprotocol.io) (MCP).
+`memory-manage-mcp` is a **local-first, database-free** persistent memory server for AI coding agents, exposed over the [Model Context Protocol](https://modelcontextprotocol.io) (MCP).
 
 Start a task in VS Code with GitHub Copilot, continue it in Cursor, finish it with Claude Code or Gemini CLI — the next agent automatically recognizes that it is working on the same project and continues from where the previous agent stopped.
 
@@ -31,7 +31,7 @@ pnpm install
 pnpm run build
 
 # or install globally
-pnpm add -g memory-mcp   # once published
+pnpm add -g memory-manage-mcp   # once published
 ```
 
 Verify the installation:
@@ -43,7 +43,7 @@ node dist/cli/index.js doctor
 
 ## Connect your AI client
 
-The server speaks MCP over **stdio**. Point any MCP client at `node <path-to>/dist/index.js` (or `memory-mcp` if installed globally).
+The server speaks MCP over **stdio**. Point any MCP client at `node <path-to>/dist/index.js` (or `memory-manage-mcp` if installed globally).
 
 ### VS Code (GitHub Copilot)
 
@@ -224,16 +224,16 @@ node dist/cli/index.js handoff latest --json
 
 - All data stays on your machine in `~/.agent-memory/`. Nothing is ever sent anywhere.
 - Raw conversation transcripts are **never** stored by default; only distilled memories you explicitly save.
-- Delete a single project with `delete_project_memory`, or everything with `memory-mcp clear --all --yes`.
+- Delete a single project with `delete_project_memory`, or everything with `memory-manage-mcp clear --all --yes`.
 
 ## Troubleshooting
 
 | Symptom                                 | Fix                                                                                                                                  |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | Client can't see the tools              | Make sure `command` is an absolute path to `node` and `args[0]` is the absolute path to `dist/index.js`. Run `pnpm run build` first. |
-| Wrong project detected                  | Check `memory-mcp project current`. Add a `.agent-memory.json` to pin an identity, or add a git remote.                              |
+| Wrong project detected                  | Check `memory-manage-mcp project current`. Add a `.agent-memory.json` to pin an identity, or add a git remote.                       |
 | Same repo, different memory per machine | Ensure the git remote URL is set (`git remote -v`) — it is the primary identity.                                                     |
-| Anything else                           | Run `memory-mcp doctor` (or `pnpm run doctor`) and read the check list.                                                              |
+| Anything else                           | Run `memory-manage-mcp doctor` (or `pnpm run doctor`) and read the check list.                                                       |
 
 ## Development
 

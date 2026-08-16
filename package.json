@@ -1,6 +1,6 @@
 {
   "name": "memory-manage-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Local-first, database-free persistent memory MCP server. Lets any AI coding agent (VS Code, Cursor, Claude, Gemini CLI, ...) continue a project exactly where another agent left off.",
   "keywords": [
     "mcp",
@@ -17,7 +17,7 @@
     "node": ">=18.0.0"
   },
   "bin": {
-    "memory-mcp": "dist/cli/index.js"
+    "memory-manage-mcp": "dist/cli/index.js"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

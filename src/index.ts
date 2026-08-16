@@ -18,10 +18,10 @@ async function main(): Promise<void> {
   await server.connect(transport);
   // The process must stay alive while the transport is open. Logging goes to
   // stderr — stdout is reserved for the MCP protocol.
-  console.error("[memory-mcp] server running on stdio");
+  console.error("[memory-manage-mcp] server running on stdio");
 }
 
 main().catch((err) => {
-  console.error("[memory-mcp] fatal error:", err);
+  console.error("[memory-manage-mcp] fatal error:", err);
   process.exit(1);
 });

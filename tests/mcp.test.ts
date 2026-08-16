@@ -91,7 +91,7 @@ describe("MCP stdio server (integration)", () => {
       capabilities: {},
       clientInfo: { name: "vitest", version: "1.0.0" },
     });
-    expect(init.result.serverInfo.name).toBe("memory-mcp");
+    expect(init.result.serverInfo.name).toBe("memory-manage-mcp");
     client.notify("notifications/initialized");
   });
 
