@@ -218,6 +218,11 @@ export interface Session {
   branch?: string;
   workingDirectory?: string;
   summary?: string;
+  /**
+   * Compressed digest of the entire conversation of this session. Injected
+   * into the next briefing so a new chat understands the previous one.
+   */
+  digest?: string;
   status: SessionStatus;
 }
 

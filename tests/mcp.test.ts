@@ -105,7 +105,7 @@ describe("MCP stdio server (integration)", () => {
     await rmDir(home);
   });
 
-  it("lists all 15 tools", async () => {
+  it("lists all 16 tools", async () => {
     const res = await client.request("tools/list");
     const names = res.result.tools.map((t: any) => t.name).sort();
     expect(names).toEqual(
@@ -122,6 +122,7 @@ describe("MCP stdio server (integration)", () => {
         "initialize_project_context",
         "record_decision",
         "save_memory",
+        "save_session_digest",
         "search_memory",
         "start_session",
         "update_task",
@@ -205,6 +206,15 @@ describe("MCP stdio server (integration)", () => {
     });
     expect(latest.nextAction).toBe("Write event store module");
 
+    const digest = await call("save_session_digest", {
+      workspacePath: workspace,
+      sessionId: session.sessionId,
+      agentId: "vitest",
+      digest:
+        "Discussed audit log design. Decided on event sourcing with PostgreSQL. Schema designed; event store module left to write next.",
+    });
+    expect(digest.saved).toBe(true);
+
     const finished = await call("finish_session", {
       workspacePath: workspace,
       sessionId: session.sessionId,
@@ -212,7 +222,7 @@ describe("MCP stdio server (integration)", () => {
     });
     expect(finished.status).toBe("completed");
 
-    // A second "agent" picks up the project and sees the handoff.
+    // A second "agent" picks up the project and sees the handoff + digest.
     const briefingRes = await client.request("tools/call", {
       name: "initialize_project_context",
       arguments: { workspacePath: workspace, agentId: "other-agent" },
@@ -220,6 +230,8 @@ describe("MCP stdio server (integration)", () => {
     expect(briefingRes.result.isError).toBeFalsy();
     const briefingText = briefingRes.result.content[0].text as string;
     expect(briefingText).toContain("Write event store module");
+    expect(briefingText).toContain("PREVIOUS CONVERSATION");
+    expect(briefingText).toContain("event sourcing with PostgreSQL");
   });
 
   it("rejects invalid tool input", async () => {

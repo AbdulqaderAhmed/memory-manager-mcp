@@ -218,15 +218,15 @@ All writes are atomic (temp file → fsync → rename) or append-only with fsync
 | `enableRawSessions` | Keep raw session records (summaries are always kept) |
 | `search.maxResults` | Default result limit for `search_memory`             |
 
-## The MCP tools (15)
+## The MCP tools (16)
 
 | Tool                         | Purpose                                                                                                                                                                             |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `initialize_project_context` | **Call first.** Detects/registers the project and returns a compact briefing: current task, latest handoff, completed/remaining work, problems, decisions, recommended next action. |
+| `initialize_project_context` | **Call first.** Detects/registers the project and returns a compact briefing: current task, latest handoff, previous conversation digest, completed/remaining work, problems, decisions, recommended next action. |
 | `get_project_context`        | Lightweight fetch of the stored project context.                                                                                                                                    |
 | `save_memory`                | Save a curated memory (`decision`, `requirement`, `architecture`, `task`, `problem`, `solution`, `progress`, `fact`, `preference`, `constraint`, `discovery`). Pass `id` to update. |
 | `get_memory`                 | Retrieve one memory by id.                                                                                                                                                          |
-| `search_memory`              | Ranked keyword search across memories, tasks, decisions, handoffs, session summaries and context.                                                                                   |
+| `search_memory`              | Ranked keyword search across memories, tasks, decisions, handoffs, session summaries, conversation digests and context.                                                             |
 | `get_current_task`           | Most relevant open task + other open tasks.                                                                                                                                         |
 | `update_task`                | Create or update a task (`active`, `in_progress`, `completed`, `blocked`, `abandoned`).                                                                                             |
 | `record_decision`            | Record an important decision (long-lived in ranking).                                                                                                                               |
@@ -234,6 +234,7 @@ All writes are atomic (temp file → fsync → rename) or append-only with fsync
 | `create_handoff`             | **Call before stopping.** Structured handoff: completed, remaining, problems, changed files, next action.                                                                           |
 | `get_latest_handoff`         | Fetch the most recent handoff (optionally with history).                                                                                                                            |
 | `start_session`              | Begin tracking an agent working session.                                                                                                                                            |
+| `save_session_digest`        | **Call before stopping.** Compress the ENTIRE conversation into one detailed digest (max 4000 chars); injected into the next chat's briefing.                                       |
 | `finish_session`             | End a session with status + summary.                                                                                                                                                |
 | `delete_project_memory`      | Permanently delete one project's memory (`confirm: true`).                                                                                                                          |
 | `clear_memory`               | Permanently delete **all** memory (`confirm: true` + phrase `"delete everything"`).                                                                                                 |
@@ -242,9 +243,9 @@ All writes are atomic (temp file → fsync → rename) or append-only with fsync
 
 The user never types memory commands — everything happens automatically behind the scenes:
 
-1. **On start** → the agent calls `initialize_project_context` by itself. If unfinished work is detected, it asks the user once: _"Would you like to continue where you left off? (yes/no)"_ — **yes** resumes from the recommended next action, **no** starts fresh.
+1. **On start** → the agent calls `initialize_project_context` by itself. The briefing includes the **previous conversation's digest**, so the agent understands the last chat from first message to last. If unfinished work is detected, it asks the user once: _"Would you like to continue where you left off? (yes/no)"_ — **yes** resumes from the recommended next action, **no** starts fresh.
 2. **While working** → the agent silently saves decisions, requirements, problems and progress with `save_memory`, and tracks work with `update_task`.
-3. **Before stopping** → the agent silently calls `create_handoff` + `finish_session`, so the next chat (even in another IDE) can pick up seamlessly.
+3. **Before stopping** → the agent silently calls `save_session_digest` (compresses the whole conversation into a compact digest), then `create_handoff` + `finish_session`, so the next chat (even in another IDE) can pick up seamlessly.
 
 A machine-readable version of this guidance lives in [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md) — you can reference it from your client's rules/instructions file.
 

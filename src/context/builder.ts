@@ -20,6 +20,7 @@ import type {
   Memory,
   Project,
   ProjectContext,
+  Session,
   Task,
   UnfinishedWorkSignal,
 } from "../types.js";
@@ -42,6 +43,8 @@ export interface BuiltContext {
   recentProgress: Memory[];
   relevantMemories: Memory[];
   unfinishedWork: UnfinishedWorkSignal | null;
+  /** The most recent whole-conversation digest, if one was saved. */
+  latestDigest: { session: Session; digest: string } | null;
   /** Human-readable compact briefing. */
   briefing: string;
 }
@@ -75,6 +78,7 @@ export class ContextBuilder {
       latestHandoff,
       memories,
       decisions,
+      latestDigest,
       unfinishedWork,
     ] = await Promise.all([
       this.store.getContext(projectId),
@@ -82,6 +86,7 @@ export class ContextBuilder {
       this.handoffManager.getLatestHandoff(projectId),
       this.store.getMemories(projectId),
       this.memoryManager.getDecisions(projectId, true),
+      this.sessionManager.getLatestDigest(projectId),
       detectUnfinishedWork(
         projectId,
         {
@@ -136,6 +141,7 @@ export class ContextBuilder {
       architecture,
       recentProgress,
       relevantMemories,
+      latestDigest,
       unfinishedWork,
       budget: options?.budget,
     });
@@ -151,6 +157,7 @@ export class ContextBuilder {
       recentProgress,
       relevantMemories,
       unfinishedWork,
+      latestDigest,
       briefing,
     };
   }
@@ -170,6 +177,7 @@ interface RenderInput {
   architecture: Memory[];
   recentProgress: Memory[];
   relevantMemories: Memory[];
+  latestDigest: { session: Session; digest: string } | null;
   unfinishedWork: UnfinishedWorkSignal | null;
   budget?: BudgetOptions;
 }
@@ -209,10 +217,21 @@ export function renderBriefing(input: RenderInput): string {
     [
       "AGENT PROTOCOL (automatic — the user never types memory commands):",
       "- Silently save important decisions, requirements, problems, solutions and progress with save_memory while working.",
-      "- Before ending or pausing, silently call create_handoff (completed, remaining, problems, next action) and finish_session.",
+      "- Before ending or pausing, silently call save_session_digest with a detailed-but-compact summary of the ENTIRE conversation (what was discussed, decided, built, and left off), then create_handoff and finish_session.",
       "- Never ask the user to run or remember any memory tooling; all bookkeeping happens behind the scenes.",
     ].join("\n"),
   );
+
+  // Previous conversation digest — the "decompressed" story of the last chat.
+  // Placed right after the protocol so the agent reads it before anything else.
+  if (input.latestDigest) {
+    const { session, digest } = input.latestDigest;
+    const lines = [
+      `PREVIOUS CONVERSATION (from ${session.agentId}, ${relativeTime(session.startedAt)}):`,
+      digest,
+    ];
+    sections.push(lines.join("\n"));
+  }
 
   // Unfinished work banner + continue-or-start-fresh prompt
   const uw = input.unfinishedWork;

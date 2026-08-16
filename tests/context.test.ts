@@ -233,6 +233,53 @@ describe("context builder", () => {
     expect(built.briefing).toContain("create_handoff");
   });
 
+  it("injects the previous conversation digest into the next briefing", async () => {
+    const { project } = await service.detectAndRegister(workspace);
+    const session = await service.sessionManager.startSession({
+      projectId: project.id,
+      agentId: "vscode",
+    });
+    await service.sessionManager.saveDigest({
+      projectId: project.id,
+      sessionId: session.sessionId,
+      digest:
+        "User asked to rename the registration key to manager-mcp. Implemented legacy migration, updated doctor and README. Left off before publishing v0.3.0 to npm.",
+    });
+
+    const built = await service.contextBuilder.build(project, {
+      workspacePath: workspace,
+    });
+    expect(built.latestDigest).not.toBeNull();
+    expect(built.briefing).toContain("PREVIOUS CONVERSATION");
+    expect(built.briefing).toContain("rename the registration key");
+    expect(built.briefing).toContain("publishing v0.3.0");
+  });
+
+  it("caps digest size so session files stay small", async () => {
+    const { project } = await service.detectAndRegister(workspace);
+    const session = await service.sessionManager.startSession({
+      projectId: project.id,
+      agentId: "vscode",
+    });
+    const huge = "x".repeat(10_000);
+    const updated = await service.sessionManager.saveDigest({
+      projectId: project.id,
+      sessionId: session.sessionId,
+      digest: huge,
+    });
+    expect(updated.digest?.length).toBeLessThanOrEqual(4000);
+  });
+
+  it("rejects an empty digest", async () => {
+    const { project } = await service.detectAndRegister(workspace);
+    await expect(
+      service.sessionManager.saveDigest({
+        projectId: project.id,
+        digest: "   ",
+      }),
+    ).rejects.toThrow(/empty/i);
+  });
+
   it("detects uncommitted changes as unfinished work", async () => {
     const repo = await initGitRepo({
       remoteUrl: "https://github.com/company/Dirty.git",

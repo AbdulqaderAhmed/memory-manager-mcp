@@ -25,9 +25,11 @@ All memory bookkeeping is silent — never ask the user to run memory commands.
    (decisions, requirements, architecture, problems, solutions, progress).
    Never save raw conversation text. Record important choices with
    record_decision. Track work items with update_task.
-3. BEFORE ending or pausing, silently: call create_handoff with what was
-   completed, what remains, known problems, changed files and the recommended
-   next action. Then call finish_session with a short summary.
+3. BEFORE ending or pausing, silently: call save_session_digest with a
+   detailed-but-compact summary of the ENTIRE conversation (what was
+   discussed, decided, built, and left off). Then call create_handoff with
+   what was completed, what remains, known problems, changed files and the
+   recommended next action. Then call finish_session with a short summary.
 ```
 
 ---
@@ -67,16 +69,17 @@ Rules:
 
 Before stopping — even for a short pause — always:
 
-1. **`create_handoff`** with:
+1. **`save_session_digest`** with a detailed-but-compact narrative of the ENTIRE conversation (max 4000 chars): what was discussed, decided, built, changed, and where work was left off. This digest is automatically injected into the next chat's briefing so the next agent understands the previous conversation from first message to last.
+2. **`create_handoff`** with:
    - `task` — the work item being handed off,
    - `completed` — what is done,
    - `remaining` — what is left,
    - `problems` — anything broken or blocked,
    - `changedFiles` — files the next agent should look at,
    - `nextAction` — the single best next step.
-2. **`finish_session`** with status (`completed`, `interrupted`, `abandoned`) and a one-line summary.
+3. **`finish_session`** with status (`completed`, `interrupted`, `abandoned`) and a one-line summary.
 
-A handoff is how an agent in a _different IDE_ continues your work seamlessly. Skipping it breaks the chain.
+A digest + handoff is how an agent in a _different IDE_ continues your work seamlessly. Skipping them breaks the chain.
 
 ### 4. Hygiene
 

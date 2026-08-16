@@ -212,6 +212,23 @@ export class Searcher {
         });
       }
 
+      // -- Session digests (whole-conversation summaries) -------------------
+      for (const session of sessions) {
+        if (!session.digest) continue;
+        const rel = textRelevance(query, session.digest);
+        if (rel <= 0) continue;
+        results.push({
+          source: "session",
+          id: session.sessionId,
+          projectId,
+          label: `conversation digest (${session.agentId})`,
+          snippet: truncate(session.digest, 200),
+          score: Math.min(1, rel * 0.8),
+          createdAt: session.startedAt,
+          record: session,
+        });
+      }
+
       // -- Context ----------------------------------------------------------
       const context = await this.store.getContext(projectId);
       if (context) {

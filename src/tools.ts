@@ -559,6 +559,51 @@ export function registerTools(server: McpServer, service: MemoryService): void {
   );
 
   // ---------------------------------------------------------------------
+  // save_session_digest
+  // ---------------------------------------------------------------------
+  server.registerTool(
+    "save_session_digest",
+    {
+      title: "Save session digest",
+      description:
+        "Compress and store a detailed digest of the ENTIRE current conversation (from the first message to now): what was discussed, decided, built, changed, and where work was left off. Call this silently BEFORE ending or pausing any chat. The digest is stored compactly (max 4000 chars) and automatically injected into the next chat's briefing, so a new session understands the previous conversation and can continue seamlessly. Do NOT save raw transcripts — write a distilled, detailed narrative.",
+      inputSchema: {
+        workspacePath: workspaceArg,
+        sessionId: z
+          .string()
+          .optional()
+          .describe(
+            "Session to attach the digest to. Defaults to the most recent session.",
+          ),
+        agentId: agentIdArg,
+        digest: z
+          .string()
+          .describe(
+            "Detailed-but-compact summary of the whole conversation (max 4000 chars).",
+          ),
+      },
+    },
+    async ({ workspacePath, sessionId, agentId, digest }) => {
+      try {
+        const { project } = await service.detectAndRegister(workspacePath);
+        const session = await service.sessionManager.saveDigest({
+          projectId: project.id,
+          sessionId,
+          agentId,
+          digest,
+        });
+        return text({
+          saved: true,
+          sessionId: session.sessionId,
+          digestChars: session.digest?.length ?? 0,
+        });
+      } catch (err) {
+        return fail(err);
+      }
+    },
+  );
+
+  // ---------------------------------------------------------------------
   // delete_project_memory
   // ---------------------------------------------------------------------
   server.registerTool(
