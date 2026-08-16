@@ -11,8 +11,13 @@
  */
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createServer } from "./server.js";
+import { ensureRegisteredSilently } from "./clients/index.js";
 
 async function main(): Promise<void> {
+  // Best-effort first-run self-registration into installed AI clients
+  // (idempotent; disable with AGENT_MEMORY_NO_AUTO_SETUP=1).
+  await ensureRegisteredSilently();
+
   const { server } = createServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);

@@ -84,7 +84,11 @@ describe("MCP stdio server (integration)", () => {
     const ws = await initPlainWorkspace();
     workspace = ws.dir;
     cleanupWs = ws.cleanup;
-    client = new McpClient({ AGENT_MEMORY_HOME: home });
+    client = new McpClient({
+      AGENT_MEMORY_HOME: home,
+      // Never let the test server write to the real user's client configs.
+      AGENT_MEMORY_NO_AUTO_SETUP: "1",
+    });
 
     const init = await client.request("initialize", {
       protocolVersion: "2024-11-05",

@@ -41,7 +41,46 @@ node dist/cli/index.js doctor
 # Memory MCP is ready.
 ```
 
-## Connect your AI client
+## Auto-configure your IDEs (recommended)
+
+One command detects every supported AI client installed on your machine and registers the memory server in each client's MCP config:
+
+```bash
+memory-manage-mcp setup            # or: node dist/cli/index.js setup
+```
+
+Supported clients (one dedicated registry per client):
+
+| Client                | Config file(s) written                                                                                                                   |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| **VS Code (Copilot)** | `%APPDATA%/Code/User/mcp.json` — plus **Code - Insiders** and **VSCodium** variants (`servers` key, `type: "stdio"`)                     |
+| **Cursor**            | `~/.cursor/mcp.json`                                                                                                                     |
+| **Claude Desktop**    | `%APPDATA%/Claude/claude_desktop_config.json` — plus **Windows Store/MSIX** installs (`%LOCALAPPDATA%/Packages/Claude_*/LocalCache/...`) |
+| **Claude Code**       | `~/.claude.json`                                                                                                                         |
+| **Antigravity**       | `~/.gemini/config/mcp_config.json` **and** `~/.gemini/antigravity-ide/mcp.json`                                                          |
+| **Gemini CLI**        | `~/.gemini/settings.json`                                                                                                                |
+| **Windsurf**          | `~/.codeium/windsurf/mcp_config.json`                                                                                                    |
+| **Codex CLI**         | `~/.codex/config.toml` (TOML `[mcp_servers.memory]` table)                                                                               |
+
+- Only clients that are actually installed are touched; others are skipped.
+- Existing config files are preserved (a `.bak` backup is created first) and written atomically — other MCP servers you configured stay intact.
+- The server is registered under the name `memory`.
+- **Self-registering:** the MCP server also registers itself silently the first time it starts, so even a bare `node dist/index.js` launch ends up configured everywhere. Disable with `AGENT_MEMORY_NO_AUTO_SETUP=1`.
+
+Useful flags:
+
+```bash
+memory-manage-mcp setup --dry-run          # show what would change, write nothing
+memory-manage-mcp setup --client cursor    # configure a single client
+memory-manage-mcp setup --force            # configure even if not detected as installed
+memory-manage-mcp setup --json             # machine-readable report
+memory-manage-mcp uninstall                # remove the memory entry from all client configs
+memory-manage-mcp uninstall --client vscode
+```
+
+After setup, restart your IDE/client and the 15 memory tools are available. Prefer manual configuration? See the next section.
+
+## Connect your AI client manually
 
 The server speaks MCP over **stdio**. Point any MCP client at `node <path-to>/dist/index.js` (or `memory-manage-mcp` if installed globally).
 
@@ -208,6 +247,9 @@ node dist/cli/index.js <command> [--workspace <path>] [--json]
   handoff latest            Show the most recent handoff
   sessions                  List agent sessions
   doctor                    Diagnose the installation
+  setup [--client <id>] [--force] [--dry-run]
+                            Auto-configure installed AI clients
+  uninstall [--client <id>] Remove the memory entry from client configs
   clear --all --yes         Permanently delete ALL memory
 ```
 

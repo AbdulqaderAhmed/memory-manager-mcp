@@ -9,6 +9,8 @@
  *   memory-manage-mcp handoff latest           show latest handoff (current project)
  *   memory-manage-mcp sessions                 list sessions (current project)
  *   memory-manage-mcp doctor                   run diagnostics
+ *   memory-manage-mcp setup                    auto-configure installed AI clients
+ *   memory-manage-mcp uninstall                remove the server from client configs
  *   memory-manage-mcp clear --all --yes        delete ALL memory (dangerous)
  *
  * Options:
@@ -18,6 +20,12 @@
 import { MemoryService } from "../service.js";
 import { detectProject } from "../project/detector.js";
 import { runDoctor, formatDoctorReport } from "./doctor.js";
+import {
+  runSetup,
+  runUninstall,
+  formatSetupReport,
+  formatUninstallReport,
+} from "./setup.js";
 import { relativeTime } from "../util.js";
 
 interface ParsedArgs {
@@ -250,6 +258,31 @@ async function main(): Promise<void> {
       return;
     }
 
+    case "setup": {
+      const clientFlag = args.flags.get("client");
+      const results = await runSetup({
+        client: typeof clientFlag === "string" ? clientFlag : undefined,
+        force: args.flags.get("force") === true,
+        dryRun: args.flags.get("dry-run") === true,
+      });
+      if (json) return print(results, true);
+      console.log(
+        formatSetupReport(results, args.flags.get("dry-run") === true),
+      );
+      if (results.some((r) => r.status === "failed")) process.exitCode = 1;
+      return;
+    }
+
+    case "uninstall": {
+      const clientFlag = args.flags.get("client");
+      const results = await runUninstall(
+        typeof clientFlag === "string" ? clientFlag : undefined,
+      );
+      if (json) return print(results, true);
+      console.log(formatUninstallReport(results));
+      return;
+    }
+
     case "clear": {
       const all = args.flags.get("all") === true;
       const yes = args.flags.get("yes") === true;
@@ -283,6 +316,9 @@ Usage:
   memory-manage-mcp handoff latest               Show the latest handoff
   memory-manage-mcp sessions                     List sessions of the current project
   memory-manage-mcp doctor                       Run installation diagnostics
+  memory-manage-mcp setup [--client <id>] [--force] [--dry-run]
+                                                 Auto-configure installed AI clients
+  memory-manage-mcp uninstall [--client <id>]    Remove the memory server from client configs
   memory-manage-mcp clear --all --yes            Delete ALL memory (dangerous)
 
 Options:
